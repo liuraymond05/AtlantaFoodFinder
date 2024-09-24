@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,42 +8,162 @@
         #map {
             height: 500px;
             width: 100%;
+            margin-top: 20px; /* Ensures some space between the form and the map */
+        }
+        #searchForm {
+            margin-bottom: 20px; /* Space between form and the map */
+        }
+        button, input {
+            margin: 5px; /* Adds some spacing to each input and button for better visibility */
         }
     </style>
 </head>
 <body>
     <h1>Find Food in Atlanta</h1>
+
+    <!-- Button to get user's location -->
+    <button onclick="getUserLocation()">Find My Location</button>
+
+    <!-- Search form -->
+    <form id="searchForm">
+        <input type="text" id="searchName" placeholder="Restaurant Name">
+        <input type="text" id="searchCuisine" placeholder="Cuisine Type">
+        <input type="number" id="searchRating" placeholder="Min Rating (1-5)" min="1" max="5">
+        <input type="number" id="searchDistance" placeholder="Max Distance (miles)" min="0">
+        <button type="button" onclick="filterRestaurants()">Search</button>
+    </form>
+
+    <!-- Map container -->
     <div id="map"></div>
 
+    <!-- JavaScript code -->
     <script>
+        let map;
+        let allMarkers = [];
+        let userLocation = null;
+
         function initMap() {
-            const map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 33.749, lng: -84.388 },
+            // Initialize the map centered around Atlanta
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 33.749, lng: -84.388 }, // Atlanta coordinates
                 zoom: 12,
+                disableDefaultUI: true,
+                
             });
-
-            // Restaurant markers
-            const restaurants = JSON.parse('{{ restaurants_data|safe }}');
-
-            restaurants.forEach(restaurant => {
-                const marker = new google.maps.Marker({
-                    position: { lat: restaurant.latitude, lng: restaurant.longitude },
-                    map: map,
-                    title: restaurant.name,
-                });
-
-                const infoWindow = new google.maps.InfoWindow({
-                    content: `<h3>${restaurant.name}</h3><p>${restaurant.description}</p>`,
-                });
-
-                marker.addListener('click', () => {
-                    infoWindow.open(map, marker)
-                })
+            const request = {
+                location: { lat: 33.749, lng: -84.388 }, 
+                radius: 10000, 
+                type: ['restaurant'],
+            }
+            const service = new google.maps.places.PlacesService(map);
+            service.nearbySearch(request, (results, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                console.log(results)
+                results.forEach((place) => {
+                    const marker = new google.maps.Marker({
+                        position: place.geometry.location,
+                        map: map,
+                        title: place.name,
+                        rating: place.rating || 0,
+                        cuisine: place.types.join(', '),
+                        distance: getDistanceFromUser(
+                            place.geometry.location.lat(),
+                            place.geometry.location.lng()
+                        ),
+                    });
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `<h3>${place.name}</h3>
+                                <p>Rating: ${place.rating || 'N/A'}</p>
+                                <p>Address: ${place.vicinity}</p>`,
+                    });
+                    marker.addListener('click', () => {
+                        infoWindow.open({
+                            anchor: marker,
+                            map,
+                            shouldFocus: false,
+                        });
+                    });
+                    marker.setMap(map);
+                    allMarkers.push(marker);
+                    });
+                } else {
+                    console.error('PlacesService Status', status);
+                }
             });
         }
+
+            
+
+        // Dummy function for distance calculation (update with actual location)
+        function getDistanceFromUser(lat, lng) { 
+            if (!userLocation) {
+            alert("User location is not available. Please click 'Find My Location' button.");
+            return Infinity;
+            }
+
+            const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                new google.maps.LatLng(userLocation.lat, userLocation.lng),
+                new google.maps.LatLng(lat, lng)
+            );
+
+            return distance / 1609.34; // Convert meters to miles
+        }
+
+        
+        function filterRestaurants() {
+            const nameInput = document.getElementById('searchName').value.toLowerCase();
+            const cuisineInput = document.getElementById('searchCuisine').value.toLowerCase();
+            const ratingInput = parseFloat(document.getElementById('searchRating').value) || 0;
+            const distanceInput = parseFloat(document.getElementById('searchDistance').value) || Infinity;
+
+            allMarkers.forEach(marker => {
+                const matchesName = marker.title.toLowerCase().includes(nameInput);
+                const matchesCuisine = marker.cuisine.toLowerCase().includes(cuisineInput);
+                const matchesRating = marker.rating >= ratingInput;
+                const matchesDistance = marker.distance <= distanceInput;
+
+                if (matchesName || matchesCuisine || matchesRating || matchesDistance) {
+                    marker.setMap(map);
+                } else {
+                    marker.setMap(null);
+                }
+            });
+        }
+
+        
+        function getUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(success, error);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        
+        function success(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            userLocation = { lat: latitude, lng: longitude }
+            fetch('/save_location/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{csrf_token}}'
+                },
+                body: JSON.stringify({ latitude: latitude, longitude: longitude })
+            }).then(response => response.json())
+              .then(data => console.log('Location saved:', data))
+              .catch(error => console.error('Error saving location:', error));
+        }
+
+        
+        function error() {
+            alert("Unable to retrieve your location.");
+        }
     </script>
+
     <script async defer
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&callback=initMap">
     </script>
 </body>
 </html>
