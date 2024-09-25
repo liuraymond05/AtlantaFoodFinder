@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favorite Bookmarked Restaurants</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .restaurant-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .restaurant-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .restaurant-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .restaurant-card h2 {
+            margin: 10px 0;
+            color: #555;
+        }
+        .restaurant-card p {
+            color: #777;
+            margin-bottom: 10px;
+        }
+        .restaurant-card .rating {
+            color: #FFD700;
+        }
+        .restaurant-card button {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .restaurant-card button:hover {
+            background-color: #ff5252;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>My Favorite Restaurants</h1>
+
+    <div class="restaurant-list">
+        <!-- Restaurant 1 -->
+        <div class="restaurant-card">
+            <img src="https://via.placeholder.com/400x200" alt="Restaurant Image">
+            <h2>Restaurant Name</h2>
+            <p>Type: Italian</p>
+            <p>Location: 123 Main St, Atlanta, GA</p>
+            <p class="rating"><i class="fas fa-star"></i> 4.5/5</p>
+            <button>Remove from Bookmarks</button>
+        </div>
+
+        <!-- Restaurant 2 -->
+        <div class="restaurant-card">
+            <img src="https://via.placeholder.com/400x200" alt="Restaurant Image">
+            <h2>Restaurant Name 2</h2>
+            <p>Type: American</p>
+            <p>Location: 456 Peach St, Atlanta, GA</p>
+            <p class="rating"><i class="fas fa-star"></i> 4.0/5</p>
+            <button>Remove from Bookmarks</button>
+        </div>
+
+        <!-- Add more restaurant cards as needed -->
+    </div>
+
+</body>
+</html>

@@ -1,63 +1,279 @@
-body{
-    font-family: Arial, sans-serif;
-    background-color: lightsteelblue;
+/* General Body Styling */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f8ff; /* Light Blue */
+    margin: 0;
+    padding: 0;
+    color: #333; /* Dark gray for text */
+}
+
+header {
+    background-color: #254a7d; /* DodgerBlue */
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+nav {
+    background-color: #4682b4; /* SteelBlue */
+    padding: 10px;
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+nav ul li {
+    display: inline;
+    margin: 0 15px;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s; /* Smooth transition for color change */
+}
+
+nav ul li a:hover {
+    color: #333; /* Change to a darker color or another highlight color */
+}
+
+main {
+    padding: 20px;
+}
+
+.hero, .features {
+    padding: 20px;
+    margin: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    color: #254a7d;
+}
+
+button {
+    background-color: #254a7d; /* DodgerBlue */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s; /* Smooth transition for background color change */
+}
+
+button:hover {
+    background-color: #1e3a6f; /* Darker shade of blue */
+}
+
+/* Login Form Styles */
+.container {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    height: 100vh; /* Full viewport height */
+    background-color: #f0f8ff; /* Light Blue background */
 }
 
-.container{
-    background-color: #496d99;
-    padding: 40px;
-    border-radius: 20px;
-    width: 400px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    text-align: center;
+.wrapper {
+    background-color: white; /* White background for the form */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+    width: 300px; /* Set a max width for the form */
+    text-align: center; /* Center text inside the form */
 }
 
-.title{
-    text-align: center;
-    margin-bottom: 20px;
+.title {
     font-size: 24px;
+    margin-bottom: 20px;
+    color: #254a7d; /* DodgerBlue for the title */
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    margin: 15px 0;
+}
+
+.row i {
+    margin-right: 10px; /* Space between icon and input */
+    color: #254a7d; /* Color for the icons */
+}
+
+label {
+    flex: 1; /* Make label take the remaining space */
+}
+
+input[type="text"],
+input[type="password"] {
+    border: 1px solid #ccc; /* Light gray border */
+    border-radius: 4px;
+    padding: 10px;
+    width: 100%; /* Full width input */
+}
+
+input[type="submit"] {
+    background-color: #254a7d; /* DodgerBlue */
     color: white;
-}
-
-.row{
-    margin-bottom: 15px;
-    position: relative;
-}
-
-input[type="text"], input[type="pasword"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #333333;
-    border-radius: 5px;
-    font-size: 18px;
-}
-
-.button input[type="submit"] {
-    width: 100%;
-    padding: 10px;
-    background-color: lightslategrey;
     border: none;
-    border-radius: 5px;
-    color: white;
-    font-size: 16px;
+    padding: 10px;
     cursor: pointer;
+    border-radius: 4px;
+    width: 100%; /* Full width button */
+    transition: background-color 0.3s; /* Smooth transition */
+}
+
+input[type="submit"]:hover {
+    background-color: #1e3a6f; /* Darker shade on hover */
+}
+
+.pass {
+    margin: 10px 0;
+    text-align: right; /* Align "Forgot password?" to the right */
+}
+
+.signup-link {
+    margin-top: 15px; /* Space above signup link */
+    color: #254a7d; /* DodgerBlue for the link */
+}
+
+.signup-link a {
+    text-decoration: none; /* Remove underline */
+    color: #254a7d; /* Match link color */
+}
+
+.signup-link a:hover {
+    text-decoration: underline; /* Underline on hover for emphasis */
+}
+
+footer {
+    background-color: #254a7d; /* DodgerBlue */
+    color: white;
+    text-align: center;
+    padding: 10px;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+}
+
+/* Map Styles */
+#map {
+    height: 500px;  /* Height of the map */
+    width: 100%;    /* Full width */
+    margin-top: 20px; /* Space between the form and the map */
+}
+
+#searchForm {
+    margin-bottom: 20px; /* Space between form and the map */
+    display: flex;
+    justify-content: center;
+    gap: 10px; /* Add space between form elements */
+}
+
+#searchForm input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 200px;
+}
+
+#searchForm button {
+    background-color: #254a7d; /* DodgerBlue */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
     transition: background-color 0.3s;
 }
 
-.button input[type="submit"]:hover {
-    background-color: cornflowerblue;
+#searchForm button:hover {
+    background-color: #1e3a6f; /* Darker shade of blue */
 }
 
-.pass, .signup-link {
-    text-align: center;
-    margin-top: 10px;
+/* Map Info Window Styles */
+.gm-style-iw h3 {
+    color: #254a7d; /* DodgerBlue for map info window titles */
 }
 
-.pass a.hover, .signup-link a:hover {
-    text-decoration: underline;
+.gm-style-iw p {
+    color: #333; /* Dark gray for map info window text */
 }
+
+/* Autocomplete Results Styling */
+#autocomplete-results {
+    margin-top: 10px; /* Space above the results */
+    border: 1px solid #ccc; /* Adds a border */
+    border-radius: 5px; /* Rounds the corners */
+    max-height: 200px; /* Maximum height for suggestions */
+    overflow-y: auto; /* Scroll if content is too long */
+}
+
+#results {
+    list-style-type: none;
+    padding: 0;
+    margin: 0; /* Resets default margins */
+}
+
+#results li {
+    padding: 10px; /* Padding for suggestion items */
+    cursor: pointer; /* Changes cursor to pointer */
+    background-color: #f9f9f9; /* Background color for suggestions */
+    border-bottom: 1px solid #e0e0e0; /* Bottom border for separation */
+}
+
+#results li:hover {
+    background-color: #f1f1f1; /* Background color on hover */
+}
+
+#title {
+    font-weight: bold; /* Bold title for predictions */
+    margin: 10px 0; /* Margin for separation */
+}
+/* Selected Restaurant Styling */
+#selected-restaurant {
+    margin-top: 20px; /* Space above the selected restaurant display */
+    padding: 15px; /* Padding for the selected restaurant container */
+    border: 1px solid #ccc; /* Light gray border */
+    border-radius: 8px; /* Rounded corners */
+    background-color: #ffffff; /* White background for contrast */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+#selected-restaurant h3 {
+    color: #254a7d; /* DodgerBlue for the title */
+    margin: 0; /* Removes default margin */
+}
+
+#selected-restaurant p {
+    color: #555; /* Dark gray for description */
+    margin: 5px 0; /* Vertical spacing for paragraphs */
+}
+
+#selected-restaurant .address {
+    font-size: 14px; /* Smaller font size for the address */
+    color: #666; /* Lighter gray for address */
+}
+
+/* Adding a button for more info or actions related to the selected restaurant */
+#selected-restaurant button {
+    background-color: #254a7d; /* DodgerBlue */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-top: 10px; /* Space above the button */
+    transition: background-color 0.3s; /* Smooth transition */
+}
+
+#selected-restaurant button:hover {
+    background-color: #1e3a6f; /* Darker shade on hover */
+}
+

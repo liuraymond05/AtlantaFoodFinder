@@ -1,0 +1,24 @@
+<!-- search_results.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results</title>
+</head>
+<body>
+    <h1>Restaurant Search Results</h1>
+    <ul>
+        {% for restaurant in restaurants %}
+            <li>
+                <h3><a href="{% url 'restaurant_detail' restaurant.place_id %}">{{ restaurant.name }}</a></h3>
+                <p>Address: {{ restaurant.address }}</p>
+                <p>Rating: {{ restaurant.rating }}</p>
+                <p>Cuisine: {{ restaurant.cuisine_type }}</p>
+            </li>
+        {% empty %}
+            <li>No restaurants found.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
