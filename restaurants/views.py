@@ -1,11 +1,15 @@
 from django.shortcuts import render, redirect
-
 from .forms import CustomUserForm
+from django.shortcuts import render, get_object_or_404, redirect
 from .models import Restaurant
 from django.contrib import auth, messages
 import json
 import requests
 from django.views.generic import TemplateView
+from .models import Restaurant, Favorite
+from django.core.serializers import serialize
+from django.http import JsonResponse, HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
 
 # View to render the map and restaurant markers
 def map_view(request):
@@ -90,3 +94,44 @@ def register_view(request):
     else:
         messages.error(request, 'Please complete the entire form.')
     return render(request, 'restaurants/register.html', {'form': form})
+
+def index_view(request):
+    return
+
+def favorite_restaurants_view(request):
+    user = request.user
+    favorites = Favorite.objects.filter(user=user).select_related('restaurant')
+    # Create a list of favorite restaurants with their coordinates
+    favorites_data = json.dumps(
+        list(favorites.values('restaurant__name', 'restaurant__latitude', 'restaurant__longitude'))
+    )
+
+    return render(request, 'restaurants/favorites.html', {
+        'favorites': favorites,
+        'favorites_data': favorites_data  # Pass data to template
+    })
+
+def add_favorite(request, restaurant_id):
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    Favorite.objects.get_or_create(user=request.user, restaurant=restaurant)
+    return redirect('restaurant_detail', restaurant_id=restaurant.id)
+
+def remove_favorite(request, restaurant_id):
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    Favorite.objects.filter(user=request.user, restaurant=restaurant).delete()
+    return redirect('restaurant_detail', restaurant_id=restaurant.id)
+
+# View to list favorites
+def list_favorites(request):
+    if not request.user.is_authenticated:
+        return HttpResponseForbidden("You need to log in to view favorites.")
+    favorites = Favorite.objects.filter(user=request.user).select_related('restaurant')
+    return render(request, 'restaurants/favorites.html', {'favorites': favorites})
+
+
+def save_favorite(request, restaurant_id):
+    if request.method == 'POST':
+        restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+        favorite, created = Favorite.objects.get_or_create(user=request.user, restaurant=restaurant)
+        return JsonResponse({'success': created, 'message': 'Added to favorites' if created else 'Already a favorite'})
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
