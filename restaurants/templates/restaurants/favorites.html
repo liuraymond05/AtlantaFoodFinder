@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favorite Restaurants</title>
+    {% load static %}
+
+    <!-- Google Maps API and Custom JS -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&callback=initMap" async defer></script>
+    <script src="{% static 'restaurants/favorites.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'restaurants/favorites.css' %}">
+</head>
+<body>
+    <h2 id="header">My Favorite Restaurants</h2>
+
+    <!-- Inject favorite restaurant data from Django -->
+    <script>
+        let favorites = {{ favorites_data|safe }};
+
+        const API_KEY = 'AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&callback=initMap'; // Add your Google Places API key here
+
+        function findRandomRestaurant() {
+            const location = '33.7490,-84.3880'; // Atlanta coordinates
+            const radius = 5000; // Search radius in meters
+
+            const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location}&radius=${radius}&type=restaurant&key=${API_KEY}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const restaurants = data.results;
+
+                    if (restaurants.length > 0) {
+                        // Select a random restaurant
+                        const randomRestaurant = restaurants[Math.floor(Math.random() * restaurants.length)];
+
+                        // Get restaurant name and address
+                        const name = randomRestaurant.name;
+                        const address = randomRestaurant.vicinity;
+
+                        // Display results on the webpage
+                        document.getElementById('restaurant-name').textContent = `Restaurant: ${name}`;
+                        document.getElementById('restaurant-address').textContent = `Address: ${address}`;
+                    } else {
+                        document.getElementById('restaurant-name').textContent = 'No restaurants found.';
+                        document.getElementById('restaurant-address').textContent = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching restaurant data:', error);
+                    document.getElementById('restaurant-name').textContent = 'Error fetching restaurant data.';
+                });
+        }
+    </script>
+
+    <!-- List of favorite restaurants -->
+    <div class="list">
+        <ul>
+            {% if favorites %}
+                <div class="sample_favs">
+                    <p class="favorites"> Here are your favorites. Explore more restaurants <a href="">here</a>!</p>
+                </div>
+                {% for favorite in favorites %}
+                    <li>{{ favorite.restaurant.name }}</li>
+                {% endfor %}
+
+            {% else %}
+                <div class="sample_favs">
+                    <p class="no_favorites">No favorites yet. Explore restaurants <a href="">here</a>, or on map below!</p>
+
+
+                    <div id="sample">
+                        <!-- You can dynamically populate sample restaurants here -->
+                    </div>
+                </div>
+            {% endif %}
+        </ul>
+    </div>
+
+    <!-- Google Map container -->
+    <div id="map" style="height: 400px; width: 100%;"></div>
+
+    <!-- Favorite Management (Add/Remove from Favorites) -->
+    {% if user.is_authenticated and restaurant %}
+        <ul>
+            {% if restaurant in user.favorite_set.all %}
+                <li><a href="{% url 'remove_favorite' restaurant.id %}">Remove from Favorites</a></li>
+            {% else %}
+                <li><a href="{% url 'add_favorite' restaurant.id %}">Add to Favorites</a></li>
+            {% endif %}
+        </ul>
+    {% endif %}
+
+
+
+</body>
+</html>

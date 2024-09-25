@@ -1,0 +1,79 @@
+body {
+    font-family: "Apple Braille";
+    background-color: #f0f8ff;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+h2 {
+    text-align: center;
+    font-size: 2.5em;
+    color: #333;
+    margin-top: 40px;
+}
+
+/* Container for the restaurant list */
+.list {
+    margin: 0 auto;
+    padding: 20px;
+    max-width: 600px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+
+/* Sample favorites list */
+.sample_favs {
+    text-align: center;
+    color: #888;
+}
+
+.sample_favs a {
+    color: #888;
+    text-decoration: underline;
+}
+
+.sample_favs a:hover {
+    color: #1e90ff;
+}
+
+/* Google Map container */
+#map {
+    margin: 20px auto;
+    height: 400px;
+    width: 90%;
+    max-width: 800px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Favorite management buttons */
+ul a {
+    color: #1e90ff;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+
+/* Mobile responsive adjustments */
+@media (max-width: 600px) {
+    h2 {
+        font-size: 2em;
+    }
+
+    .list {
+        padding: 10px;
+    }
+
+    ul a {
+        padding: 8px 12px;
+    }
+}
