@@ -1,6 +1,6 @@
 body {
     font-family: "Apple Braille";
-    background-color: #f0f8ff;
+    background-color: #f4f4f4;
     color: #333;
     margin: 0;
     padding: 0;
@@ -77,3 +77,48 @@ ul a {
         padding: 8px 12px;
     }
 }
+
+
+
+.restaurant-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .restaurant-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .restaurant-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .restaurant-card h2 {
+            margin: 10px 0;
+            color: #555;
+        }
+        .restaurant-card p {
+            color: #777;
+            margin-bottom: 10px;
+        }
+        .restaurant-card .rating {
+            color: #FFD700;
+        }
+        .restaurant-card button {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .restaurant-card button:hover {
+            background-color: #ff5252;
+        }
