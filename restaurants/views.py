@@ -73,11 +73,6 @@ def logout_view(request):
     auth.logout(request)
     messages.info(request, 'You have successfully logged out!')
     return redirect('/')
-
-# Define the home view
-class HomeView(TemplateView):
-    template_name = 'restaurants/index.html'  # Ensure this path is correct
-
 def register_view(request):
     form = CustomUserForm()
 
@@ -90,3 +85,6 @@ def register_view(request):
     else:
         messages.error(request, 'Please complete the entire form.')
     return render(request, 'restaurants/register.html', {'form': form})
+# Define the home view
+class HomeView(TemplateView):
+    template_name = 'restaurants/index.html'  # Ensure this path is correct

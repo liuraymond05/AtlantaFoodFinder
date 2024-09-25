@@ -5,10 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Atlanta Food Finder</title>
-    <link rel="stylesheet" href="{% static 'restaurants/style.css' %}">
+    <link rel="stylesheet" href="{% static 'restaurants/style.css' %}?v=1.0">
+
 </head>
 <body>
     <header>
+        {% include 'restaurants/banner.html' %}
         <h1>Atlanta Food Finder</h1>
         <nav>
             <ul>
@@ -21,8 +23,11 @@
         <section class="hero">
             <h2>Discover the Best Restaurants in Atlanta</h2>
             <p>Search for restaurants by name, cuisine, rating, and distance.</p>
-            <a href="{% url 'map' %}" class="button" id="exploreButton">Explore Now</a>
+            <a href="{% url 'map' %}" class="explore-now" id="exploreButton">Explore Now</a>
+
+
         </section>
+
 
         <section class="features">
             <h3>Features</h3>

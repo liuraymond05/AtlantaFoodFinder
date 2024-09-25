@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Search Results</title>
+    <link rel="stylesheet" href="{% static 'restaurants/style.css' %}">
+
+    <style>
+        #results {
+            list-style-type: none;
+            padding: 0;
+        }
+        .result-item {
+            border-bottom: 1px solid #ccc;
+            padding: 10px;
+        }
+        .result-item h3 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .sort-controls {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Restaurant Search Results</h1>
+    <a href="{% url 'home' %}" class="return-homepage">Return to Homepage</a>
+
+    <!-- Sorting controls -->
+    <div class="sort-controls">
+        <label for="sortBy">Sort by:</label>
+        <select id="sortBy" onchange="sortResults()">
+            <option value="rating">Rating</option>
+            <option value="distance">Distance</option>
+        </select>
+    </div>
+
+    <!-- Results container -->
+        <ul id="results"></ul>
+
+    <script>
+        // Retrieve search results from localStorage
+        const searchResults = JSON.parse(localStorage.getItem('searchResults')) || [];
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = ''; // Clear existing results
+
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<li>No results found.</li>';
+                return;
+            }
+
+            results.forEach(place => {
+                const li = document.createElement('li');
+                li.className = 'result-item';
+                li.innerHTML = `
+                    <h3>${place.name}</h3>
+                    <p>Rating: ${place.rating || 'N/A'} (${place.user_ratings_total || 0} reviews)</p>
+                    <p>Address: ${place.formatted_address || 'N/A'}</p>
+                    <p>Cuisine: ${place.types?.join(', ') || 'N/A'}</p>
+                `;
+                resultsContainer.appendChild(li);
+            });
+        }
+
+        function sortResults() {
+            const sortBy = document.getElementById('sortBy').value;
+            let sortedResults;
+
+            if (sortBy === 'rating') {
+                sortedResults = searchResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+            } else if (sortBy === 'distance') {
+                // Placeholder for distance sorting
+                // Assuming you have distance data, replace with actual distance comparison
+                sortedResults = searchResults.sort((a, b) => a.distance - b.distance);
+            }
+
+            displayResults(sortedResults);
+        }
+
+        // Display the results on page load
+        displayResults(searchResults);
+    </script>
+</body>
+</html>
+

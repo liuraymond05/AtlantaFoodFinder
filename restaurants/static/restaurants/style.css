@@ -17,6 +17,7 @@ header {
 nav {
     background-color: #4682b4; /* SteelBlue */
     padding: 10px;
+    position: relative; /* Added for positioning the user login button */
 }
 
 nav ul {
@@ -42,6 +43,22 @@ nav ul li a:hover {
     color: #333; /* Change to a darker color or another highlight color */
 }
 
+.user-login {
+    position: absolute; /* Absolute positioning for the user login button */
+    right: 20px; /* Distance from the right */
+    top: 10px; /* Distance from the top */
+    background-color: #254a7d; /* DodgerBlue */
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.3s; /* Smooth transition */
+}
+
+.user-login:hover {
+    background-color: #1e3a6f; /* Darker shade on hover */
+}
+
 main {
     padding: 20px;
 }
@@ -58,6 +75,26 @@ h2 {
     color: #254a7d;
 }
 
+/* Explore Now Button */
+.explore-now {
+    background-color: #254a7d; /* DodgerBlue */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s; /* Smooth transition for background color change */
+    display: inline-block; /* Allows margin and padding */
+    margin: 20px auto; /* Center the button */
+}
+
+.explore-now:hover {
+    background-color: #1e3a6f; /* Darker shade of blue */
+}
+
+/* Other existing styles remain unchanged... */
+
+/* Button styles */
 button {
     background-color: #254a7d; /* DodgerBlue */
     color: white;
@@ -236,6 +273,7 @@ footer {
     font-weight: bold; /* Bold title for predictions */
     margin: 10px 0; /* Margin for separation */
 }
+
 /* Selected Restaurant Styling */
 #selected-restaurant {
     margin-top: 20px; /* Space above the selected restaurant display */
@@ -277,9 +315,81 @@ footer {
     background-color: #1e3a6f; /* Darker shade on hover */
 }
 
+<<<<<<< Updated upstream
 .hint {
     display: none;
     color: midnightblue;
     font-size: 15px;
 }
 
+=======
+#ugly {
+    text-align: center; /* Center the text */
+    margin: 20px 0; /* Optional: adds some vertical space around the text */
+}
+.return-homepage {
+    background-color: #254a7d; /* DodgerBlue */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s; /* Smooth transition for background color change */
+    display: inline-block; /* Allows margin and padding */
+    margin: 20px auto; /* Center the button */
+    text-align: center; /* Center text */
+}
+
+.return-homepage:hover {
+    background-color: #1e3a6f; /* Darker shade of blue */
+}
+
+/* Banner Styles */
+.banner {
+    display: flex;
+    justify-content: flex-end;
+    background-color: #1e3a6f;
+    padding: 10px;
+}
+
+.profile {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.favorites-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;  /* Position directly below the profile image */
+    right: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    padding: 10px;
+    z-index: 100;
+}
+
+.profile:hover .favorites-dropdown,
+.profile-pic:hover + .favorites-dropdown,
+.favorites-dropdown:hover {
+    display: block;
+}
+
+.favorites-link {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+}
+
+.favorites-link:hover {
+    color: #ff6347;
+}
+>>>>>>> Stashed changes
