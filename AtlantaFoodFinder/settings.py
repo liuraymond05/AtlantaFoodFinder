@@ -132,13 +132,11 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-# This defines the directory where your static files are collected (used in production)
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # This is the list of directories where Django will look for static files
 # Correct way to define STATICFILES_DIRS
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
+    os.path.join(BASE_DIR, 'restaurants', 'static')
 ]
 
 # Default primary key field type
