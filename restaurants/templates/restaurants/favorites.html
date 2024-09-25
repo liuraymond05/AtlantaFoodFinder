@@ -1,98 +1,94 @@
 <!DOCTYPE html>
+{% load static %}
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Favorite Restaurants</title>
-    {% load static %}
-
-    <!-- Google Maps API and Custom JS -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&callback=initMap" async defer></script>
-    <script src="{% static 'restaurants/favorites.js' %}"></script>
-    <link rel="stylesheet" href="{% static 'restaurants/favorites.css' %}">
+    <title>Favorite Bookmarked Restaurants</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .restaurant-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .restaurant-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .restaurant-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .restaurant-card h2 {
+            margin: 10px 0;
+            color: #555;
+        }
+        .restaurant-card p {
+            color: #777;
+            margin-bottom: 10px;
+        }
+        .restaurant-card .rating {
+            color: #FFD700;
+        }
+        .restaurant-card button {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .restaurant-card button:hover {
+            background-color: #ff5252;
+        }
+    </style>
 </head>
 <body>
-    <h2 id="header">My Favorite Restaurants</h2>
 
-    <!-- Inject favorite restaurant data from Django -->
-    <script>
-        let favorites = {{ favorites_data|safe }};
+    <h1>My Favorite Restaurants</h1>
 
-        const API_KEY = 'AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&callback=initMap'; // Add your Google Places API key here
+    <div class="restaurant-list">
+        <!-- Restaurant 1 -->
+        <div class="restaurant-card">
+            <img src="https://via.placeholder.com/400x200" alt="Restaurant Image">
+            <h2>Restaurant Name</h2>
+            <p>Type: Italian</p>
+            <p>Location: 123 Main St, Atlanta, GA</p>
+            <p class="rating"><i class="fas fa-star"></i> 4.5/5</p>
+            <button>Remove from Bookmarks</button>
+        </div>
 
-        function findRandomRestaurant() {
-            const location = '33.7490,-84.3880'; // Atlanta coordinates
-            const radius = 5000; // Search radius in meters
+        <!-- Restaurant 2 -->
+        <div class="restaurant-card">
+            <img src="https://via.placeholder.com/400x200" alt="Restaurant Image">
+            <h2>Restaurant Name 2</h2>
+            <p>Type: American</p>
+            <p>Location: 456 Peach St, Atlanta, GA</p>
+            <p class="rating"><i class="fas fa-star"></i> 4.0/5</p>
+            <button>Remove from Bookmarks</button>
+        </div>
 
-            const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location}&radius=${radius}&type=restaurant&key=${API_KEY}`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    const restaurants = data.results;
-
-                    if (restaurants.length > 0) {
-                        // Select a random restaurant
-                        const randomRestaurant = restaurants[Math.floor(Math.random() * restaurants.length)];
-
-                        // Get restaurant name and address
-                        const name = randomRestaurant.name;
-                        const address = randomRestaurant.vicinity;
-
-                        // Display results on the webpage
-                        document.getElementById('restaurant-name').textContent = `Restaurant: ${name}`;
-                        document.getElementById('restaurant-address').textContent = `Address: ${address}`;
-                    } else {
-                        document.getElementById('restaurant-name').textContent = 'No restaurants found.';
-                        document.getElementById('restaurant-address').textContent = '';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching restaurant data:', error);
-                    document.getElementById('restaurant-name').textContent = 'Error fetching restaurant data.';
-                });
-        }
-    </script>
-
-    <!-- List of favorite restaurants -->
-    <div class="list">
-        <ul>
-            {% if favorites %}
-                <div class="sample_favs">
-                    <p class="favorites"> Here are your favorites. Explore more restaurants <a href="">here</a>!</p>
-                </div>
-                {% for favorite in favorites %}
-                    <li>{{ favorite.restaurant.name }}</li>
-                {% endfor %}
-
-            {% else %}
-                <div class="sample_favs">
-                    <p class="no_favorites">No favorites yet. Explore restaurants <a href="">here</a>, or on map below!</p>
-
-
-                    <div id="sample">
-                        <!-- You can dynamically populate sample restaurants here -->
-                    </div>
-                </div>
-            {% endif %}
-        </ul>
+        <!-- Add more restaurant cards as needed -->
     </div>
-
-    <!-- Google Map container -->
-    <div id="map" style="height: 400px; width: 100%;"></div>
-
-    <!-- Favorite Management (Add/Remove from Favorites) -->
-    {% if user.is_authenticated and restaurant %}
-        <ul>
-            {% if restaurant in user.favorite_set.all %}
-                <li><a href="{% url 'remove_favorite' restaurant.id %}">Remove from Favorites</a></li>
-            {% else %}
-                <li><a href="{% url 'add_favorite' restaurant.id %}">Add to Favorites</a></li>
-            {% endif %}
-        </ul>
-    {% endif %}
-
-
 
 </body>
 </html>

@@ -1,37 +1,61 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Food Finder</title>
+    <link rel="stylesheet" href="{% static 'restaurants/style.css' %}">
+
     <style>
         #map {
-            height: 500px;
-            width: 100%;
-            margin-top: 20px; /* Ensures some space between the form and the map */
+            height: 500px;  /* Height of the map */
+            width: 100%;    /* Full width */
+            margin-top: 20px; /* Space between the form and the map */
         }
         #searchForm {
             margin-bottom: 20px; /* Space between form and the map */
         }
         button, input {
-            margin: 5px; /* Adds some spacing to each input and button for better visibility */
+            margin: 5px; /* Adds spacing for better visibility */
+        }
+        #results {
+            list-style-type: none;
+            padding: 0;
         }
     </style>
 </head>
 <body>
-    <h1>Find Food in Atlanta</h1>
+    <h1>Find Food Near You</h1>
 
     <!-- Button to get user's location -->
     <button onclick="getUserLocation()">Find My Location</button>
 
-    <!-- Search form -->
+    <!-- Search form with autocomplete -->
     <form id="searchForm">
-        <input type="text" id="searchName" placeholder="Restaurant Name">
-        <input type="text" id="searchCuisine" placeholder="Cuisine Type">
+        <input type="text" id="searchName" placeholder="Search for restaurants...">
+        <input type="text" id="searchCuisine" list="cuisine-suggestions" placeholder="Cuisine Type">
         <input type="number" id="searchRating" placeholder="Min Rating (1-5)" min="1" max="5">
         <input type="number" id="searchDistance" placeholder="Max Distance (miles)" min="0">
         <button type="button" onclick="filterRestaurants()">Search</button>
     </form>
+
+    <!-- Datalist for cuisine suggestions -->
+    <datalist id="cuisine-suggestions">
+        <option value="Italian">
+        <option value="Mexican">
+        <option value="Chinese">
+        <option value="Indian">
+        <option value="American">
+        <option value="Japanese">
+        <!-- Add more cuisines as needed -->
+    </datalist>
+
+    <!-- Results for autocomplete suggestions -->
+    <div id="autocomplete-results">
+        <h2 id="title"></h2>
+        <ul id="results"></ul>
+    </div>
 
     <!-- Map container -->
     <div id="map"></div>
@@ -41,75 +65,139 @@
         let map;
         let allMarkers = [];
         let userLocation = null;
+        let service;
+        let title;
+        let results;
+        let input;
+        let token;
 
-        function initMap() {
-            // Initialize the map centered around Atlanta
+        // Initial request body for autocomplete
+        let request = {
+            input: "",
+            locationRestriction: {
+                west: -122.44,
+                north: 37.8,
+                east: -122.39,
+                south: 37.78,
+            },
+            origin: { lat: 33.749, lng: -84.388 }, // Atlanta coordinates
+            includedPrimaryTypes: ["restaurant"],
+            language: "en-US",
+            region: "us",
+        };
+
+        async function init() {
+            token = new google.maps.places.AutocompleteSessionToken();
+            title = document.getElementById("title");
+            results = document.getElementById("results");
+            input = document.getElementById("searchName");
+            input.addEventListener("input", makeAcRequest);
+            request = refreshToken(request);
+
+            const location = { lat: 33.749, lng: -84.388 }; // Atlanta coordinates
             map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 33.749, lng: -84.388 }, // Atlanta coordinates
+                center: location,
                 zoom: 12,
                 disableDefaultUI: true,
-                
             });
-            const request = {
-                location: { lat: 33.749, lng: -84.388 }, 
-                radius: 10000, 
-                type: ['restaurant'],
-            }
-            const service = new google.maps.places.PlacesService(map);
-            service.nearbySearch(request, (results, status) => {
-            if (status === google.maps.places.PlacesServiceStatus.OK) {
-                console.log(results)
-                results.forEach((place) => {
-                    const marker = new google.maps.Marker({
-                        position: place.geometry.location,
-                        map: map,
-                        title: place.name,
-                        rating: place.rating || 0,
-                        cuisine: place.types.join(', '),
-                        distance: getDistanceFromUser(
-                            place.geometry.location.lat(),
-                            place.geometry.location.lng()
-                        ),
+
+            // Initialize the Places service
+            service = new google.maps.places.PlacesService(map);
+
+            // Parse restaurant data passed from Django (make sure to properly escape)
+            const restaurants = JSON.parse('{{ restaurants|escapejs }}');
+            restaurants.forEach(restaurant => {
+                const marker = new google.maps.Marker({
+                    position: { lat: restaurant.latitude, lng: restaurant.longitude },
+                    map: map,
+                    title: restaurant.name,
+                    rating: restaurant.rating || 0,
+                    cuisine: restaurant.cuisine_type || 'Unknown',
+                    address: restaurant.address,
+                    reviews: restaurant.reviews || 'No reviews available',
+                    contact_info: restaurant.contact_info,
+                });
+
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `<h3>${restaurant.name}</h3>
+                              <p>Rating: ${restaurant.rating || 'N/A'}</p>
+                              <p>Address: ${restaurant.address}</p>
+                              <p>Cuisine: ${restaurant.cuisine_type}</p>
+                              <p>Reviews: ${restaurant.reviews || 'N/A'}</p>`
+                });
+
+                marker.addListener('click', () => {
+                    infoWindow.open({
+                        anchor: marker,
+                        map,
+                        shouldFocus: false,
                     });
-                    const infoWindow = new google.maps.InfoWindow({
-                        content: `<h3>${place.name}</h3>
-                                <p>Rating: ${place.rating || 'N/A'}</p>
-                                <p>Address: ${place.vicinity}</p>`,
-                    });
-                    marker.addListener('click', () => {
-                        infoWindow.open({
-                            anchor: marker,
-                            map,
-                            shouldFocus: false,
-                        });
-                    });
-                    marker.setMap(map);
-                    allMarkers.push(marker);
-                    });
-                } else {
-                    console.error('PlacesService Status', status);
-                }
+                });
+
+                marker.setMap(map);
+                allMarkers.push(marker);
             });
         }
 
-            
-
-        // Dummy function for distance calculation (update with actual location)
-        function getDistanceFromUser(lat, lng) { 
-            if (!userLocation) {
-            alert("User location is not available. Please click 'Find My Location' button.");
-            return Infinity;
+        async function makeAcRequest(event) {
+            // Reset elements and exit if an empty string is received.
+            if (event.target.value == "") {
+                title.innerText = "";
+                results.replaceChildren();
+                return;
             }
 
-            const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                new google.maps.LatLng(userLocation.lat, userLocation.lng),
-                new google.maps.LatLng(lat, lng)
+            // Add the latest char sequence to the request.
+            request.input = event.target.value;
+
+            // Fetch autocomplete suggestions and show them in a list.
+            const { suggestions } =
+                await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+
+            title.innerText = 'Query predictions for "' + request.input + '"';
+            // Clear the list first.
+            results.replaceChildren();
+
+            for (const suggestion of suggestions) {
+                const placePrediction = suggestion.placePrediction;
+                // Create a link for the place, add an event handler to fetch the place.
+                const a = document.createElement("a");
+                a.addEventListener("click", () => {
+                    onPlaceSelected(placePrediction.toPlace());
+                });
+                a.innerText = placePrediction.text.toString();
+
+                // Create a new list element.
+                const li = document.createElement("li");
+                li.appendChild(a);
+                results.appendChild(li);
+            }
+        }
+
+        // Event handler for clicking on a suggested place.
+        async function onPlaceSelected(place) {
+            await place.fetchFields({
+                fields: ["displayName", "formattedAddress"],
+            });
+
+            let placeText = document.createTextNode(
+                place.displayName + ": " + place.formattedAddress,
             );
 
-            return distance / 1609.34; // Convert meters to miles
+            results.replaceChildren(placeText);
+            title.innerText = "Selected Eatery:";
+            input.value = "";
+            refreshToken(request);
         }
 
-        
+        // Helper function to refresh the session token.
+        async function refreshToken(request) {
+            // Create a new session token and add it to the request.
+            token = new google.maps.places.AutocompleteSessionToken();
+            request.sessionToken = token;
+            return request;
+        }
+
         function filterRestaurants() {
             const nameInput = document.getElementById('searchName').value.toLowerCase();
             const cuisineInput = document.getElementById('searchCuisine').value.toLowerCase();
@@ -120,9 +208,9 @@
                 const matchesName = marker.title.toLowerCase().includes(nameInput);
                 const matchesCuisine = marker.cuisine.toLowerCase().includes(cuisineInput);
                 const matchesRating = marker.rating >= ratingInput;
-                const matchesDistance = marker.distance <= distanceInput;
+                const matchesDistance = getDistanceFromUser(marker.position.lat(), marker.position.lng()) <= distanceInput;
 
-                if (matchesName || matchesCuisine || matchesRating || matchesDistance) {
+                if (matchesName && matchesCuisine && matchesRating && matchesDistance) {
                     marker.setMap(map);
                 } else {
                     marker.setMap(null);
@@ -130,7 +218,20 @@
             });
         }
 
-        
+        function getDistanceFromUser(lat, lng) {
+            if (!userLocation) {
+                alert("User location is not available. Please click 'Find My Location' button.");
+                return Infinity;
+            }
+
+            const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                new google.maps.LatLng(userLocation.lat, userLocation.lng),
+                new google.maps.LatLng(lat, lng)
+            );
+
+            return distance / 1609.34; // Convert meters to miles
+        }
+
         function getUserLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(success, error);
@@ -139,16 +240,15 @@
             }
         }
 
-        
         function success(position) {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
-            userLocation = { lat: latitude, lng: longitude }
+            userLocation = { lat: latitude, lng: longitude };
             fetch('/save_location/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{csrf_token}}'
+                    'X-CSRFToken': '{{ csrf_token }}'
                 },
                 body: JSON.stringify({ latitude: latitude, longitude: longitude })
             }).then(response => response.json())
@@ -156,14 +256,19 @@
               .catch(error => console.error('Error saving location:', error));
         }
 
-        
         function error() {
             alert("Unable to retrieve your location.");
         }
+
+        // Initialize the Google Maps API
+        window.initMap = init;
     </script>
 
+    <!-- Replace 'YOUR_API_KEY' with your actual Google Maps API key -->
     <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places&callback=initMap">
     </script>
+    <script src="{% static 'restaurants/map.js' %}"></script>
+
 </body>
 </html>

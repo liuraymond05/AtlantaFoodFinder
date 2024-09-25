@@ -1,24 +1,44 @@
-<!DOCTYPE html>
 {% load static %}
-<html lang="en" dir="ltr">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login to Your Account!</title>
+    <title>Atlanta Food Finder</title>
     <link rel="stylesheet" href="{% static 'restaurants/style.css' %}">
 </head>
 <body>
-<div class="container">
-    <div class="wrapper">
-        <div class="title"><span>Login to Your Account</span></div>
-        <br><br>
-        {% if request.user.is_authenticated%}
-            <a href="{% url 'logout' %}" class="a_tag">Logout</a>
-        {% else %}
-            <a href="{% url 'login' %}" class="a_tag">Login</a>
-        {% endif %}
-    </div>
-</div>
+    <header>
+        <h1>Atlanta Food Finder</h1>
+        <nav>
+            <ul>
+                <li><a href="{% url 'login' %}" id="loginLink">User Login</a></li>
+            </ul>
+        </nav>
+    </header>
 
+    <main>
+        <section class="hero">
+            <h2>Discover the Best Restaurants in Atlanta</h2>
+            <p>Search for restaurants by name, cuisine, rating, and distance.</p>
+            <a href="{% url 'map' %}" class="button" id="exploreButton">Explore Now</a>
+        </section>
+
+        <section class="features">
+            <h3>Features</h3>
+            <ul>
+                <li>Filter by Cuisine Type</li>
+                <li>Sort by Ratings</li>
+                <li>Find Nearby Locations</li>
+                <li>User Reviews and Recommendations</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Atlanta Food Finder. All rights reserved.</p>
+    </footer>
+
+    <script src="{% static 'restaurants/script.js' %}"></script>
 </body>
 </html>
