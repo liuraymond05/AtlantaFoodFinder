@@ -16,32 +16,6 @@
 <body>
    <h2 id="header">My Favorite Restaurants</h2>
 
-
-    <div class="restaurant-list">
-        <!-- Restaurant 1 -->
-        <div class="restaurant-card">
-            <img src="https://via.placeholder.com/400x200" alt="Restaurant Image">
-            <h2>Restaurant Name</h2>
-            <p>Type: Italian</p>
-            <p>Location: 123 Main St, Atlanta, GA</p>
-            <p class="rating"><i class="fas fa-star"></i> 4.5/5</p>
-            <button>Remove from Bookmarks</button>
-        </div>
-
-        <!-- Restaurant 2 -->
-        <div class="restaurant-card">
-            <img src="https://via.placeholder.com/400x200" alt="Restaurant Image">
-            <h2>Restaurant Name 2</h2>
-            <p>Type: American</p>
-            <p>Location: 456 Peach St, Atlanta, GA</p>
-            <p class="rating"><i class="fas fa-star"></i> 4.0/5</p>
-            <button>Remove from Bookmarks</button>
-        </div>
-
-        <!-- Add more restaurant cards as needed -->
-    </div>
-
-
    <!-- Inject favorite restaurant data from Django -->
    <script>
        let favorites = {{ favorites_data|safe }};
@@ -93,7 +67,7 @@
    <!-- List of favorite restaurants -->
    <div class="list">
        <ul>
-           {% if favorites %}
+           {% if list_favorites %}
                <div class="sample_favs">
                    <p class="favorites"> Here are your favorites. Explore more restaurants <a href="">here</a>!</p>
                </div>
@@ -121,6 +95,30 @@
    <!-- Google Map container -->
    <div id="map" style="height: 400px; width: 100%;"></div>
 
+
+   <div class="restaurant-list">
+        <!-- Restaurant 1 -->
+        <div class="restaurant-card">
+            <img src="https://via.placeholder.com/400x200" alt="Restaurant Image">
+            <h2>Restaurant Name</h2>
+            <p>Type: Italian</p>
+            <p>Location: 123 Main St, Atlanta, GA</p>
+            <p class="rating"><i class="fas fa-star"></i> 4.5/5</p>
+            <button>Remove from Bookmarks</button>
+        </div>
+
+        <!-- Restaurant 2 -->
+        <div class="restaurant-card">
+            <img src="https://via.placeholder.com/400x200" alt="Restaurant Image">
+            <h2>Restaurant Name 2</h2>
+            <p>Type: American</p>
+            <p>Location: 456 Peach St, Atlanta, GA</p>
+            <p class="rating"><i class="fas fa-star"></i> 4.0/5</p>
+            <button>Remove from Bookmarks</button>
+        </div>
+
+        <!-- Add more restaurant cards as needed -->
+    </div>
 
    <!-- Favorite Management (Add/Remove from Favorites) -->
    {% if user.is_authenticated and restaurant %}
