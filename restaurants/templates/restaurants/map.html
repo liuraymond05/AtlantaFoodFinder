@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Food Finder</title>
     <link rel="stylesheet" href="{% static 'restaurants/style.css' %}">
-
     <style>
         #map {
             height: 500px;
@@ -37,7 +36,6 @@
 </head>
 <header>
     {% include 'restaurants/banner.html' %}
-
 </header>
 <body>
     <h1 id="ugly">Find Food Near You</h1>
@@ -65,7 +63,6 @@
         </select>
         <ul id="restaurantList"></ul>
     </div>
-
     <!-- JavaScript code -->
     <script>
         let map;
@@ -135,6 +132,7 @@
                         rating: place.rating || 'N/A',
                         address: place.formatted_address,
                         location: place.geometry.location,
+                        placeId: place.place_id // Add place ID for saving to favorites
                     });
                 });
                 updateRestaurantList(); // Update the restaurant list
@@ -166,6 +164,7 @@
                             <h4>Reviews:</h4>
                             <div class="reviews">${formatReviews(details.reviews)}</div>
                             <p>Phone: ${details.formatted_phone_number || 'N/A'}</p>
+                            <button onclick="addToFavorites('${details.place_id}', '${details.name}')">Save to Favorites</button>
                         `;
                         infowindow.setContent(content);
                         infowindow.open(map, marker);
@@ -184,6 +183,40 @@
                 </div>
             `).join('');
         }
+
+        // Add a restaurant to the user's favorites
+        const addToFavorites = (placeId, name) => {
+    const csrftoken = document.cookie.split(';').find(cookie => cookie.trim().startsWith('csrftoken=')).split('=')[1];
+
+    fetch('/add_to_favorites/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,  // Include CSRF token
+        },
+        body: JSON.stringify({
+            place_id: placeId,  // Use actual place ID
+            name: name           // Use actual restaurant name
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log(data.message || data.error);
+        // Handle success or error feedback to the user
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+};
+
+// Example usage
+addToFavorites('some_place_id', 'some_restaurant_name');
+
 
         // Clear all markers from the map
         function clearMarkers() {
@@ -230,7 +263,7 @@
 
             restaurantData.forEach(restaurant => {
                 const li = document.createElement('li');
-                li.innerText = `${restaurant.name} - Rating: ${restaurant.rating}, Address: ${restaurant.address}`;
+                li.innerHTML = `${restaurant.name} - Rating: ${restaurant.rating}, Address: ${restaurant.address} <button onclick="addToFavorites('${restaurant.placeId}', '${restaurant.name}')">Save to Favorites</button>`;
                 restaurantList.appendChild(li);
             });
         }
@@ -258,24 +291,71 @@
         // Function to sort restaurants
         function sortRestaurants() {
             const sortBy = document.getElementById('sortBy').value;
-
             if (sortBy === 'rating') {
                 restaurantData.sort((a, b) => b.rating - a.rating);
-            } else if (sortBy === 'distance') {
-                // Assuming userLocation is set, you could implement a distance calculation here.
-                restaurantData.sort((a, b) =>
-                    google.maps.geometry.spherical.computeDistanceBetween(a.location, userLocation) -
-                    google.maps.geometry.spherical.computeDistanceBetween(b.location, userLocation)
-                );
+            } else if (sortBy === 'distance' && userLocation) {
+                restaurantData.sort((a, b) => {
+                    const distanceA = google.maps.geometry.spherical.computeDistanceBetween(a.location, userLocation);
+                    const distanceB = google.maps.geometry.spherical.computeDistanceBetween(b.location, userLocation);
+                    return distanceA - distanceB;
+                });
             }
-            updateRestaurantList(); // Update the list display after sorting
+            updateRestaurantList(); // Re-render the sorted list
         }
-
-        // Initialize the Google Maps API
-        window.initMap = initMap;
     </script>
+    <script>
+    // Add a restaurant to the user's favorites
+    function addToFavorites(placeId, name) {
+        fetch('/add_to_favorites/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ place_id: placeId, name: name })
+        }).then(response => {
+            if (response.ok) {
+                displaySuccessMessage("Added to favorites!");
+            } else {
+                response.json().then(data => {
+                    displayErrorMessage(data.error || "Failed to add to favorites.");
+                });
+            }
+        }).catch(error => {
+            console.error('Error saving restaurant:', error);
+            displayErrorMessage("An error occurred while adding to favorites.");
+        });
+    }
 
-     <!-- Replace 'YOUR_API_KEY' with your actual Google Maps API key -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places&callback=initMap"></script>
+    // Function to display success message
+    function displaySuccessMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('success-message');
+        messageDiv.innerText = message;
+        document.body.appendChild(messageDiv);
+
+        // Automatically remove the message after 3 seconds
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+
+    // Function to display error message
+    function displayErrorMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('error-message');
+        messageDiv.innerText = message;
+        document.body.appendChild(messageDiv);
+
+        // Automatically remove the message after 3 seconds
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+</script>
+
+
+    <!-- Load the Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places&callback=initMap" async defer></script>
 </body>
 </html>

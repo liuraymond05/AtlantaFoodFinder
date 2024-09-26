@@ -1,0 +1,12 @@
+{% load static %}
+<!-- banner.html -->
+<link rel="stylesheet" href="{% static 'restaurants/style.css' %}?v=1.0">
+<div class="banner">
+    <div class="profile">
+        <img src="{% static 'restaurants/images/profile-pic.png' %}" alt="Profile" class="profile-pic">
+        <div class="favorites-dropdown">
+            <a href="{% url 'favorite' %}" class="favorites-link">Favorites</a>
+        </div>
+    </div>
+</div>
+

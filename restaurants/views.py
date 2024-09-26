@@ -1,11 +1,13 @@
-from django.shortcuts import render, redirect
-
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages, auth
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.views.generic import TemplateView
+from .models import Restaurant, Favorite
 from .forms import CustomUserForm
-from .models import Restaurant
-from django.contrib import auth, messages
 import json
 import requests
-from django.views.generic import TemplateView
 
 # View to render the map and restaurant markers
 def map_view(request):
@@ -51,10 +53,6 @@ def food_finder(request):
 
     return render(request, 'restaurants/search_results.html')
 
-# Render the index page
-#def index_view(request):
-    #return render(request, 'restaurants/index.html')
-
 # Handle user login
 def login_view(request):
     if request.method == 'POST':
@@ -73,6 +71,8 @@ def logout_view(request):
     auth.logout(request)
     messages.info(request, 'You have successfully logged out!')
     return redirect('/')
+
+# Handle user registration
 def register_view(request):
     form = CustomUserForm()
 
@@ -80,11 +80,48 @@ def register_view(request):
         form = CustomUserForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'You have made an account!')
+            messages.success(request, 'You have successfully created an account!')
             return redirect('login')
     else:
         messages.error(request, 'Please complete the entire form.')
     return render(request, 'restaurants/register.html', {'form': form})
-# Define the home view
+
+# Add a restaurant to favorites
+@login_required
+@require_POST
+def add_to_favorites(request):
+    data = json.loads(request.body)
+    place_id = data.get('place_id')
+    name = data.get('name')
+
+    restaurant, created = Restaurant.objects.get_or_create(
+        place_id=place_id,
+        defaults={'name': name}
+    )
+
+    # Add to user's favorites
+    favorite, created = Favorite.objects.get_or_create(
+        user=request.user,
+        restaurant=restaurant
+    )
+
+    if created:
+        return JsonResponse({'message': 'Added to favorites!'})
+    else:
+        return JsonResponse({'error': 'Restaurant is already in your favorites.'}, status=400)
+
+# Remove a restaurant from favorites
+@login_required
+def remove_favorite(request, place_id):
+    restaurant = get_object_or_404(Restaurant, place_id=place_id)
+    Favorite.objects.filter(user=request.user, restaurant=restaurant).delete()
+    return redirect('favorites')
+
+# View user's favorites
+@login_required
+def favorites_view(request):
+    favorites = Favorite.objects.filter(user=request.user).select_related('restaurant')
+    return render(request, 'restaurants/favorites.html', {'favorites': favorites})
+
 class HomeView(TemplateView):
     template_name = 'restaurants/index.html'  # Ensure this path is correct
