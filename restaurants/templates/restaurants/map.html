@@ -84,6 +84,8 @@
             // Initialize the Places service and info window
             service = new google.maps.places.PlacesService(map);
             infowindow = new google.maps.InfoWindow();
+            //function to load all restaurants in atlanta
+            loadAllRestaurants(location);
 
             // Initialize Autocomplete
             autocomplete = new google.maps.places.Autocomplete(document.getElementById('searchName'));
@@ -100,6 +102,44 @@
                 createMarker(place); // Optionally create a marker for the selected place
             });
         }
+        //function that loads restaurants in atlanta
+        function loadAllRestaurants(location) {
+            const request = {
+                location: location,
+                radius: 5000,
+                types: ['restaurant', 
+                'meal_takeaway', 
+                'cafe', 'bar', 
+                'fast_food', 
+                'food', 
+                'fast_food_restaurant', 
+                'american_restaurant',
+                'chinese_restaurant', 
+                'mexican_restaurant', 
+                'italian_restaurant', 
+                'indian_restaurant', 
+                'vegan_restaurant', 
+                'vegetarian_restaurant',
+                'meal_delivery',
+                'bakery',
+                'ice_cream_shop',
+                ],
+            }
+            service.nearbySearch(request, handleNearbyResults)
+        }
+        
+        //handles nearby searches
+        function handleNearbyResults(results, status) {
+            if (status == google.maps.places.PlacesServiceStatus.OK) {
+                clearMarkers();
+                results.forEach(place => {
+                    createMarker(place);
+                })
+            } else {
+                alert("Error fetching restaurant data: " + status)
+            } 
+        }
+        
 
         // Perform search using TextSearchService
         function performSearch() {
@@ -126,6 +166,7 @@
                 clearMarkers(); // Clear previous markers
                 restaurantData = []; // Clear previous restaurant data
                 results.forEach(place => {
+                if (place.types.includes('restaurant')) {
                     createMarker(place);
                     restaurantData.push({
                         name: place.name,
@@ -134,11 +175,16 @@
                         location: place.geometry.location,
                         placeId: place.place_id // Add place ID for saving to favorites
                     });
-                });
-                updateRestaurantList(); // Update the restaurant list
+                }
+            });
+            updateRestaurantList(); // Update the restaurant list
             } else {
                 alert("No results found.");
             }
+        }
+        function clearMarkers() {
+            allMarkers.forEach(marker => marker.setMap(null)); // Set each marker's map to null
+            allMarkers = [];
         }
 
         // Create markers for each result
