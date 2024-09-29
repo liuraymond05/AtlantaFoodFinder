@@ -1,11 +1,15 @@
+from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages, auth
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
 from django.views.generic import TemplateView
 from .models import Restaurant, Favorite
-from .forms import CustomUserForm
+from .forms import CustomUserForm, PasswordResetCustomForm
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 import json
 import requests
 
@@ -68,9 +72,11 @@ def login_view(request):
 
 # Handle user logout
 def logout_view(request):
-    auth.logout(request)
-    messages.info(request, 'You have successfully logged out!')
-    return redirect('/')
+    if request.method == 'POST':
+        logout(request)
+        messages.info(request, 'You have successfully logged out!')
+        return redirect('login')
+    return render(request, 'restaurants/logout.html')
 
 # Handle user registration
 def register_view(request):
@@ -125,3 +131,37 @@ def favorites_view(request):
 
 class HomeView(TemplateView):
     template_name = 'restaurants/index.html'  # Ensure this path is correct
+
+@login_required
+def change_password_view(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Your password was successfully updated!')
+            return redirect('login')
+        else:
+            messages.error(request, "Please put in a valid password.")
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'restaurants/reset.html', {"form": form})
+
+def reset_password_view(request):
+    if request.method == 'POST':
+        form = PasswordResetCustomForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password_new = form.cleaned_data['new_password1']
+
+            try:
+                user = User.objects.get(username=username)
+                user.set_password(password_new)
+                user.save()
+                messages.success(request, 'Your password was successfully updated!')
+                return redirect('login')
+            except User.DoesNotExist:
+                messages.error(request, 'This user does not exist.')
+    else:
+        form = PasswordResetCustomForm()
+    return render(request, 'restaurants/reset.html', {"form": form})

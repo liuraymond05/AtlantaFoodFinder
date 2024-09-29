@@ -26,10 +26,19 @@
                     <input type="password" id='id_password' name="password" placeholder="Enter your password" required>
                 </label>
             </div>
-            <div class="pass"><a href="#">Forgot password?</a></div>
+            <div class="pass"><a href="{% url 'reset' %}">Forgot password?</a></div>
             <div class="row button">
                 <input type="submit">
             </div>
+            {% if messages %}
+            <div class="error">
+                <ul>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
             <div class="signup-link">Don't have an account? <a href="{% url 'register' %}">Join now!</a></div>
         </form>
     </div>

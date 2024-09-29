@@ -148,11 +148,13 @@ label {
 }
 
 input[type="text"],
-input[type="password"] {
+input[type="password"],
+input[type="email"]{
     border: 1px solid #ccc; /* Light gray border */
     border-radius: 4px;
     padding: 10px;
     width: 100%; /* Full width input */
+    box-sizing: border-box;
 }
 
 input[type="submit"] {
@@ -315,14 +317,14 @@ footer {
     background-color: #1e3a6f; /* Darker shade on hover */
 }
 
-<<<<<<< Updated upstream
+
 .hint {
     display: none;
     color: midnightblue;
     font-size: 15px;
 }
 
-=======
+
 #ugly {
     text-align: center; /* Center the text */
     margin: 20px 0; /* Optional: adds some vertical space around the text */

@@ -12,4 +12,7 @@ urlpatterns = [
     path('favorites/', views.favorites_view, name='favorite'),
     path('add_to_favorites/', views.add_to_favorites, name='add_to_favorites'),  # Add favorite via POST
     path('remove_favorite/<str:place_id>/', views.remove_favorite, name='remove_favorite'),
+    path ('change/', views.change_password_view, name='change'),
+    path('reset/', views.reset_password_view, name='reset'),
+
 ]
