@@ -4,8 +4,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
-from .models import Restaurant, Favorite
-from .forms import CustomUserForm
+from .models import Restaurant, Favorite, Review
+from .forms import CustomUserForm, ReviewForm
 import json
 import requests
 
@@ -125,3 +125,63 @@ def favorites_view(request):
 
 class HomeView(TemplateView):
     template_name = 'restaurants/index.html'  # Ensure this path is correct
+
+
+def restaurant_detail(request, restaurant_id):
+    restaurant = Restaurant.objects.get(pk=restaurant_id)
+    reviews = Review.objects.filter(restaurant=restaurant)
+    
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.user = request.user
+            review.restaurant = restaurant
+            review.save()
+            return redirect('restaurant_detail', restaurant_id=restaurant.id)
+    else:
+        form = ReviewForm()
+    
+    return render(request, 'restaurant_detail.html', {'restaurant': restaurant, 'reviews': reviews, 'form': form})
+
+def edit_review(request, review_id):
+    review = get_object_or_404(Review, pk=review_id)
+    
+    if request.user != review.user:
+        return redirect('restaurant_detail', restaurant_id=review.restaurant.id)
+    
+    if request.method == 'POST':
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            form.save()
+            return redirect('restaurant_detail', restaurant_id=review.restaurant.id)
+    else:
+        form = ReviewForm(instance=review)
+    
+    return render(request, 'edit_review.html', {'form': form, 'review': review})
+
+def delete_review(request, review_id):
+    review = get_object_or_404(Review, pk=review_id)
+    
+    if request.user == review.user:
+        review.delete()
+    return redirect('restaurant_detail', restaurant_id=review.restaurant.id)
+
+
+def add_review(request, place_id):
+    restaurant = get_object_or_404(Restaurant, place_id=place_id)
+    
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        text = request.POST.get('text')
+        
+        # Create the new review
+        review = Review.objects.create(
+            user=request.user,
+            restaurant=restaurant,
+            rating=rating,
+            text=text
+        )
+        review.save()
+        
+    return redirect('restaurant_detail', place_id=restaurant.place_id)

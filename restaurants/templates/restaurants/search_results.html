@@ -15,6 +15,36 @@
                 <p>Address: {{ restaurant.address }}</p>
                 <p>Rating: {{ restaurant.rating }}</p>
                 <p>Cuisine: {{ restaurant.cuisine_type }}</p>
+
+                <h4>Reviews:</h4>
+                <ul>
+                    {% for review in restaurant.reviews %}
+                        <li>
+                            <strong>{{ review.user.username }}</strong> rated {{ review.rating }} stars
+                            <p>{{ review.text }}</p>
+                        </li>
+                    {% empty %}
+                        <li>No reviews yet. Be the first to write one!</li>
+                    {% endfor %}
+                </ul>
+                {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'add_review' restaurant.place_id %}">
+                        {% csrf_token %}
+                        <label for="rating">Rating:</label>
+                        <select id="rating" name="rating">
+                            {% for i in '12345' %}
+                                <option value="{{ i }}">{{ i }} stars</option>
+                            {% endfor %}
+                        </select>
+                        <br>
+                        <label for="text">Your Review:</label>
+                        <textarea id="text" name="text" placeholder="Write your review here..."></textarea>
+                        <br>
+                        <button type="submit">Submit Review</button>
+                    </form>
+                {% else %}
+                    <p><a href="{% url 'login' %}">Log in</a> to write a review.</p>
+                {% endif %}
             </li>
         {% empty %}
             <li>No restaurants found.</li>
