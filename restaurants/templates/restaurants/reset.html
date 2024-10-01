@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Your Password!</title>
+    <link rel="stylesheet" href="{% static 'restaurants/style.css' %}">
+    <script>
+        function showHints() {
+            document.getElementById('password-hints').style.display = 'block';
+        }
+
+        function hideHints() {
+            document.getElementById('password-hints').style.display = 'none';
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+    <div class="wrapper">
+        <div class="title"><span>Reset Your Password!</span></div>
+        <form name="ResetPasswordForm" action="{% url 'reset' %}" method="post">
+            {% csrf_token %}
+            <div class="row">
+                <i class="fas fa-lock"></i>
+                <label>
+                    <input type="text" id='id_username' name="username" placeholder="Enter your username" required>
+                </label>
+            </div>
+            <div class="row">
+                <i class="fas fa-lock"></i>
+                <label>
+                    <input type="password" id='id_new_password1' name="new_password1" placeholder="Enter a new password" required onfocus="showHints()" onblur="hideHints()">
+                </label>
+            </div>
+            <div class="row">
+                <i class="fas fa-lock"></i>
+                <label>
+                    <input type="password" id='id_password2' name="new_password2" placeholder="Confirm your password">
+                </label>
+            </div>
+            <div class="row button">
+                <input type="submit" value="Reset Password">
+            </div>
+            <div id="password-hints" class="hint">
+                <ul>
+                    <li>Must be at least 8 characters long</li>
+                    <li>Must include letters and numbers</li>
+                    <li>Must be different from username</li>
+                </ul>
+            </div>
+            <div class="signup-link">Know your password? <a href="{% url 'login' %}">Login here!!</a></div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
