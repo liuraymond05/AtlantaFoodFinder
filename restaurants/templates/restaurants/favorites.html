@@ -37,10 +37,10 @@
             {% for favorite in favorites %}
                 <div class="favorite-item">
                     <div class="favorite-details">
-                        <h3>{{ favorite.name }}</h3>
-                        <p>Rating: {{ favorite.rating }}</p>
-                        <p>Cuisine: {{ favorite.cuisine }}</p>
-                        <p>Distance: {{ favorite.distance }} km</p>
+                        <h3>{{ favorite.restaurant.name }}</h3>  <!-- Reference the restaurant name -->
+                        <p>Rating: {{ favorite.restaurant.rating }}</p>  <!-- Reference the restaurant rating -->
+                        <p>Cuisine: {{ favorite.restaurant.cuisine_type }}</p>  <!-- Reference the cuisine type -->
+                        <p>Address: {{ favorite.restaurant.address }}</p>  <!-- Optionally display address -->
                     </div>
                     <button class="remove-button" onclick="removeFavorite('{{ favorite.id }}')">Remove</button>
                 </div>

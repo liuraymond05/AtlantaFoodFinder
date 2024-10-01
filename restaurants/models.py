@@ -10,6 +10,7 @@ class Restaurant(models.Model):
     cuisine_type = models.CharField(max_length=100, blank=True, null=True)
     rating = models.FloatField(blank=True, null=True)
     reviews = models.TextField(blank=True, null=True)
+    place_id = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -18,6 +19,7 @@ class Favorite(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE)
     added_at = models.DateTimeField(auto_now_add=True)
+    place_id = models.CharField(max_length=255, default='default_value')
 
     class Meta:
         unique_together = ('user', 'restaurant')

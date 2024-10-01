@@ -14,64 +14,71 @@
         }
         #searchForm {
             margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        button, input {
+        button, input, select {
             margin: 5px;
+            padding: 10px;
         }
-        #results {
-            list-style-type: none;
-            padding: 0;
+        input[type="text"], select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            flex: 1; /* Allow the search bar to fill space */
         }
-        .review {
-            border-bottom: 1px solid #ccc; /* Add a line to separate reviews */
-            padding: 5px 0; /* Add some padding */
+        #addToFavorites {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
         }
-        .review strong {
-            color: #333; /* Style the reviewer name */
-        }
-        .restaurant-list {
-            margin-top: 20px;
+        .bottom-padding {
+            padding-bottom: 50px; /* Added padding to the bottom */
         }
     </style>
 </head>
 <header>
     {% include 'restaurants/banner.html' %}
 </header>
-<body>
-    <h1 id="ugly">Find Food Near You</h1>
+<body class="bottom-padding">
+    <h1>Find Food Near You</h1>
 
     <!-- Button to get user's location -->
     <button onclick="getUserLocation()">Find My Location</button>
     <a href="{% url 'home' %}" class="return-homepage">Return to Homepage</a>
 
-    <!-- Search form -->
+    <!-- Search form with filters -->
     <form id="searchForm">
         <input type="text" id="searchName" placeholder="Search for restaurants..." autocomplete="off">
+        <label for="minRating">Min Rating:</label>
+        <select id="minRating">
+            <option value="0">Any</option>
+            <option value="3">3 stars</option>
+            <option value="4">4 stars</option>
+            <option value="5">5 stars</option>
+        </select>
+        <label for="maxDistance">Max Distance (in km):</label>
+        <select id="maxDistance">
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="15">15 km</option>
+        </select>
         <button type="button" onclick="performSearch()">Search</button>
-        <button type="button" onclick="viewInList()">View in List</button>
     </form>
+
+    <!-- Add to Favorites Button (moved to the top) -->
+    <div id="addToFavorites" style="display: none;">
+        <button id="favoriteButton" onclick="addToFavorites()">Save to Favorites</button>
+        <div id="favoriteMessage" style="display: none;"></div>
+    </div>
 
     <!-- Map container -->
     <div id="map"></div>
 
-    <!-- Restaurant list section -->
-    <div class="restaurant-list">
-        <h3>Restaurant List</h3>
-        <select id="sortBy" onchange="sortRestaurants()">
-            <option value="rating">Sort by Rating</option>
-            <option value="distance">Sort by Distance</option>
-        </select>
-        <ul id="restaurantList"></ul>
-    </div>
     <!-- JavaScript code -->
     <script>
-        let map;
-        let allMarkers = [];
-        let userLocation = null;
-        let service;
-        let infowindow;
-        let autocomplete;
-        let restaurantData = []; // Store restaurant data for the list
+        let map, allMarkers = [], userLocation = null, service, infowindow, autocomplete, restaurantData = [];
 
         function initMap() {
             const location = { lat: 33.749, lng: -84.388 }; // Atlanta coordinates
@@ -81,13 +88,10 @@
                 disableDefaultUI: true,
             });
 
-            // Initialize the Places service and info window
             service = new google.maps.places.PlacesService(map);
             infowindow = new google.maps.InfoWindow();
-            //function to load all restaurants in atlanta
             loadAllRestaurants(location);
 
-            // Initialize Autocomplete
             autocomplete = new google.maps.places.Autocomplete(document.getElementById('searchName'));
             autocomplete.bindTo('bounds', map);
             autocomplete.addListener('place_changed', () => {
@@ -97,97 +101,75 @@
                     return;
                 }
                 map.setCenter(place.geometry.location);
-                map.setZoom(15); // Zoom in on the selected place
+                map.setZoom(15);
                 clearMarkers();
-                createMarker(place); // Optionally create a marker for the selected place
+                createMarker(place);
             });
         }
-        //function that loads restaurants in atlanta
+
         function loadAllRestaurants(location) {
             const request = {
                 location: location,
                 radius: 5000,
-                types: ['restaurant', 
-                'meal_takeaway', 
-                'cafe', 'bar', 
-                'fast_food', 
-                'food', 
-                'fast_food_restaurant', 
-                'american_restaurant',
-                'chinese_restaurant', 
-                'mexican_restaurant', 
-                'italian_restaurant', 
-                'indian_restaurant', 
-                'vegan_restaurant', 
-                'vegetarian_restaurant',
-                'meal_delivery',
-                'bakery',
-                'ice_cream_shop',
-                ],
-            }
-            service.nearbySearch(request, handleNearbyResults)
+                types: ['restaurant'],
+            };
+            service.nearbySearch(request, handleNearbyResults);
         }
-        
-        //handles nearby searches
-        function handleNearbyResults(results, status) {
-            if (status == google.maps.places.PlacesServiceStatus.OK) {
-                clearMarkers();
-                results.forEach(place => {
-                    createMarker(place);
-                })
-            } else {
-                alert("Error fetching restaurant data: " + status)
-            } 
-        }
-        
 
-        // Perform search using TextSearchService
+        function handleNearbyResults(results, status) {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                clearMarkers();
+                results.forEach(createMarker);
+            } else {
+                alert("Error fetching restaurant data: " + status);
+            }
+        }
+
         function performSearch() {
             const query = document.getElementById('searchName').value;
+            const minRating = parseFloat(document.getElementById('minRating').value);
+            const maxDistance = parseFloat(document.getElementById('maxDistance').value);
 
             if (!query) {
                 alert("Please enter a search query.");
                 return;
             }
 
-            // Create request for the Places API Text Search
             const request = {
                 query: query,
                 location: map.getCenter(),
-                radius: 5000, // 5 km radius
+                radius: maxDistance * 1000, // Convert km to meters
             };
 
-            service.textSearch(request, handleSearchResults);
+            service.textSearch(request, (results, status) => handleSearchResults(results, status, minRating));
         }
 
-        // Handle the search results from the Places API
-        function handleSearchResults(results, status) {
+        function handleSearchResults(results, status, minRating) {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
-                clearMarkers(); // Clear previous markers
-                restaurantData = []; // Clear previous restaurant data
+                clearMarkers();
+                restaurantData = [];
                 results.forEach(place => {
-                if (place.types.includes('restaurant')) {
-                    createMarker(place);
-                    restaurantData.push({
-                        name: place.name,
-                        rating: place.rating || 'N/A',
-                        address: place.formatted_address,
-                        location: place.geometry.location,
-                        placeId: place.place_id // Add place ID for saving to favorites
-                    });
-                }
-            });
-            updateRestaurantList(); // Update the restaurant list
+                    if (place.types.includes('restaurant') && (!place.rating || place.rating >= minRating)) {
+                        createMarker(place);
+                        restaurantData.push({
+                            name: place.name,
+                            rating: place.rating || 'N/A',
+                            address: place.formatted_address,
+                            location: place.geometry.location,
+                            placeId: place.place_id,
+                        });
+                    }
+                });
             } else {
                 alert("No results found.");
             }
         }
+
         function clearMarkers() {
-            allMarkers.forEach(marker => marker.setMap(null)); // Set each marker's map to null
+            allMarkers.forEach(marker => marker.setMap(null));
             allMarkers = [];
         }
 
-        // Create markers for each result
         function createMarker(place) {
             const marker = new google.maps.Marker({
                 map: map,
@@ -195,23 +177,12 @@
                 title: place.name,
             });
 
-            // Store the marker for later filtering
             allMarkers.push(marker);
 
-            // Add click listener to show details in info window
             google.maps.event.addListener(marker, 'click', () => {
                 service.getDetails({ placeId: place.place_id }, (details, status) => {
                     if (status === google.maps.places.PlacesServiceStatus.OK) {
-                        const content = `
-                            <h3>${details.name}</h3>
-                            <p>Rating: ${details.rating || 'N/A'}</p>
-                            <p>Address: ${details.formatted_address}</p>
-                            <p>Cuisine: ${details.types?.join(', ') || 'N/A'}</p>
-                            <h4>Reviews:</h4>
-                            <div class="reviews">${formatReviews(details.reviews)}</div>
-                            <p>Phone: ${details.formatted_phone_number || 'N/A'}</p>
-                            <button onclick="addToFavorites('${details.place_id}', '${details.name}')">Save to Favorites</button>
-                        `;
+                        const content = generateInfoWindowContent(details);
                         infowindow.setContent(content);
                         infowindow.open(map, marker);
                     }
@@ -219,7 +190,22 @@
             });
         }
 
-        // Format reviews for better readability
+        function generateInfoWindowContent(details) {
+            return `
+                <h3>${details.name}</h3>
+                <p>Rating: ${details.rating || 'N/A'}</p>
+                <p>Address: ${details.formatted_address}</p>
+                <h4>Contact Information:</h4>
+                <p>${details.formatted_phone_number || 'N/A'}</p>
+                <h4>Cuisine Type:</h4>
+                <p>${details.types.join(', ') || 'N/A'}</p>
+                <h4>Reviews:</h4>
+                <div class="reviews">${formatReviews(details.reviews)}</div>
+                <button id="favoriteButton" onclick="addToFavorites('${details.place_id}', '${details.id}')">Add to Favorites</button> <!-- Pass restaurant ID -->
+                <div id="favoriteMessage" style="display: none;"></div>
+            `;
+        }
+
         function formatReviews(reviews) {
             if (!reviews || reviews.length === 0) return 'No reviews available';
             return reviews.map(review => `
@@ -228,46 +214,6 @@
                     <p>${review.text}</p>
                 </div>
             `).join('');
-        }
-
-        // Add a restaurant to the user's favorites
-        const addToFavorites = (placeId, name) => {
-    const csrftoken = document.cookie.split(';').find(cookie => cookie.trim().startsWith('csrftoken=')).split('=')[1];
-
-    fetch('/add_to_favorites/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken,  // Include CSRF token
-        },
-        body: JSON.stringify({
-            place_id: placeId,  // Use actual place ID
-            name: name           // Use actual restaurant name
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok ' + response.statusText);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log(data.message || data.error);
-        // Handle success or error feedback to the user
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
-};
-
-// Example usage
-addToFavorites('some_place_id', 'some_restaurant_name');
-
-
-        // Clear all markers from the map
-        function clearMarkers() {
-            allMarkers.forEach(marker => marker.setMap(null));
-            allMarkers = [];
         }
 
         function getUserLocation() {
@@ -279,129 +225,57 @@ addToFavorites('some_place_id', 'some_restaurant_name');
         }
 
         function success(position) {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-            userLocation = { lat: latitude, lng: longitude };
+            userLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
 
             map.setCenter(userLocation);
+            saveUserLocation(userLocation);
+        }
 
-            // Save user's location (if needed)
+        function saveUserLocation(location) {
             fetch('/save_location/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': '{{ csrf_token }}'
                 },
-                body: JSON.stringify({ latitude: latitude, longitude: longitude })
-            }).then(response => response.json())
-              .then(data => console.log('Location saved:', data))
-              .catch(error => console.error('Error saving location:', error));
+                body: JSON.stringify(location)
+            })
+            .then(response => response.json())
+            .then(data => console.log('Location saved:', data))
+            .catch(error => console.error('Error saving location:', error));
         }
 
-        function error() {
-            alert("Unable to retrieve your location.");
-        }
-
-        // Function to update the restaurant list display
-        function updateRestaurantList() {
-            const restaurantList = document.getElementById('restaurantList');
-            restaurantList.innerHTML = ''; // Clear previous list
-
-            restaurantData.forEach(restaurant => {
-                const li = document.createElement('li');
-                li.innerHTML = `${restaurant.name} - Rating: ${restaurant.rating}, Address: ${restaurant.address} <button onclick="addToFavorites('${restaurant.placeId}', '${restaurant.name}')">Save to Favorites</button>`;
-                restaurantList.appendChild(li);
+        function addToFavorites(restaurantId) {
+            fetch(`/add_favorite/${restaurantId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ restaurantId }) // Pass restaurantId
+            })
+            .then(response => response.json())
+            .then(data => {
+                const favoriteMessage = document.getElementById('favoriteMessage');
+                favoriteMessage.style.display = 'block';
+                favoriteMessage.innerText = data.message;
+                favoriteMessage.style.color = 'green';
+            })
+            .catch(error => {
+                console.error('Error adding to favorites:', error);
+                const favoriteMessage = document.getElementById('favoriteMessage');
+                favoriteMessage.style.display = 'block';
+                favoriteMessage.innerText = 'Failed to add to favorites.';
+                favoriteMessage.style.color = 'red';
             });
         }
 
-        // Function to view restaurant list on a new page
-        function viewInList() {
-            const restaurantListHtml = restaurantData.map(restaurant =>
-                `<li>${restaurant.name} - Rating: ${restaurant.rating}, Address: ${restaurant.address}</li>`
-            ).join('');
-            const newWindow = window.open('', '_blank');
-            newWindow.document.write(`
-                <html>
-                <head>
-                    <title>Restaurant List</title>
-                </head>
-                <body>
-                    <h1>Restaurant List</h1>
-                    <ul>${restaurantListHtml}</ul>
-                </body>
-                </html>
-            `);
-            newWindow.document.close();
-        }
-
-        // Function to sort restaurants
-        function sortRestaurants() {
-            const sortBy = document.getElementById('sortBy').value;
-            if (sortBy === 'rating') {
-                restaurantData.sort((a, b) => b.rating - a.rating);
-            } else if (sortBy === 'distance' && userLocation) {
-                restaurantData.sort((a, b) => {
-                    const distanceA = google.maps.geometry.spherical.computeDistanceBetween(a.location, userLocation);
-                    const distanceB = google.maps.geometry.spherical.computeDistanceBetween(b.location, userLocation);
-                    return distanceA - distanceB;
-                });
-            }
-            updateRestaurantList(); // Re-render the sorted list
-        }
+        window.onload = initMap; // Initialize map on window load
     </script>
-    <script>
-    // Add a restaurant to the user's favorites
-    function addToFavorites(placeId, name) {
-        fetch('/add_to_favorites/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({ place_id: placeId, name: name })
-        }).then(response => {
-            if (response.ok) {
-                displaySuccessMessage("Added to favorites!");
-            } else {
-                response.json().then(data => {
-                    displayErrorMessage(data.error || "Failed to add to favorites.");
-                });
-            }
-        }).catch(error => {
-            console.error('Error saving restaurant:', error);
-            displayErrorMessage("An error occurred while adding to favorites.");
-        });
-    }
 
-    // Function to display success message
-    function displaySuccessMessage(message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('success-message');
-        messageDiv.innerText = message;
-        document.body.appendChild(messageDiv);
-
-        // Automatically remove the message after 3 seconds
-        setTimeout(() => {
-            messageDiv.remove();
-        }, 3000);
-    }
-
-    // Function to display error message
-    function displayErrorMessage(message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('error-message');
-        messageDiv.innerText = message;
-        document.body.appendChild(messageDiv);
-
-        // Automatically remove the message after 3 seconds
-        setTimeout(() => {
-            messageDiv.remove();
-        }, 3000);
-    }
-</script>
-
-
-    <!-- Load the Google Maps API -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places&callback=initMap" async defer></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places"></script>
 </body>
 </html>

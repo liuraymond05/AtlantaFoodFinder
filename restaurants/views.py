@@ -13,13 +13,11 @@ from django.contrib.auth.forms import PasswordChangeForm
 import json
 import requests
 
+
 # View to render the map and restaurant markers
 def map_view(request):
-    restaurants = Restaurant.objects.all()
-    restaurants_data = json.dumps(
-        list(restaurants.values('name', 'latitude', 'longitude', 'address'))
-    )
-    return render(request, 'restaurants/map.html', {'restaurants_data': restaurants_data})
+    return render(request, 'restaurants/map.html')
+
 
 # View to handle restaurant search based on user input
 def food_finder(request):
@@ -35,7 +33,7 @@ def food_finder(request):
             'radius': float(max_distance) * 1609.34,
             'type': 'restaurant',
             'keyword': query,
-            'key': 'YOUR_GOOGLE_API_KEY'  # Replace with your actual Google API key
+            'key': 'AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs'  # Replace with your actual Google API key
         }
         response = requests.get(places_url, params=params)
         results = response.json().get('results', [])
@@ -57,6 +55,7 @@ def food_finder(request):
 
     return render(request, 'restaurants/search_results.html')
 
+
 # Handle user login
 def login_view(request):
     if request.method == 'POST':
@@ -70,6 +69,7 @@ def login_view(request):
             messages.error(request, 'Invalid username or password. Please try again.')
     return render(request, 'restaurants/login.html')
 
+
 # Handle user logout
 def logout_view(request):
     if request.method == 'POST':
@@ -77,6 +77,7 @@ def logout_view(request):
         messages.info(request, 'You have successfully logged out!')
         return redirect('login')
     return render(request, 'restaurants/logout.html')
+
 
 # Handle user registration
 def register_view(request):
@@ -92,29 +93,26 @@ def register_view(request):
         messages.error(request, 'Please complete the entire form.')
     return render(request, 'restaurants/register.html', {'form': form})
 
+
 # Add a restaurant to favorites
 @login_required
 @require_POST
-def add_to_favorites(request):
+def addToFavorites(request):
     data = json.loads(request.body)
     place_id = data.get('place_id')
-    name = data.get('name')
+    restaurant_id = data.get('restaurant_id')
 
-    restaurant, created = Restaurant.objects.get_or_create(
-        place_id=place_id,
-        defaults={'name': name}
-    )
+    if not place_id:
+        return JsonResponse({'success': False, 'error': 'No place_id provided.'})
 
-    # Add to user's favorites
-    favorite, created = Favorite.objects.get_or_create(
-        user=request.user,
-        restaurant=restaurant
-    )
+    user = request.user  # Get the current logged-in user
+    # Create or get the Favorite instance for the user and place_id
+    favorite, created = Favorite.objects.get_or_create(user=user, place_id=place_id)
 
     if created:
-        return JsonResponse({'message': 'Added to favorites!'})
+        return JsonResponse({'success': True, 'message': 'Added to favorites!'})
     else:
-        return JsonResponse({'error': 'Restaurant is already in your favorites.'}, status=400)
+        return JsonResponse({'success': False, 'error': 'Restaurant already in favorites.'})
 
 # Remove a restaurant from favorites
 @login_required
@@ -123,20 +121,22 @@ def remove_favorite(request, place_id):
     Favorite.objects.filter(user=request.user, restaurant=restaurant).delete()
     return redirect('favorites')
 
+
 # View user's favorites
 @login_required
 def favorites_view(request):
     favorites = Favorite.objects.filter(user=request.user).select_related('restaurant')
     return render(request, 'restaurants/favorites.html', {'favorites': favorites})
 
+
 class HomeView(TemplateView):
     template_name = 'restaurants/index.html'  # Ensure this path is correct
 
 
 def restaurant_detail(request, restaurant_id):
-    restaurant = Restaurant.objects.get(pk=restaurant_id)
+    restaurant = get_object_or_404(Restaurant, pk=restaurant_id)
     reviews = Review.objects.filter(restaurant=restaurant)
-    
+
     if request.method == 'POST':
         form = ReviewForm(request.POST)
         if form.is_valid():
@@ -147,15 +147,16 @@ def restaurant_detail(request, restaurant_id):
             return redirect('restaurant_detail', restaurant_id=restaurant.id)
     else:
         form = ReviewForm()
-    
+
     return render(request, 'restaurant_detail.html', {'restaurant': restaurant, 'reviews': reviews, 'form': form})
+
 
 def edit_review(request, review_id):
     review = get_object_or_404(Review, pk=review_id)
-    
+
     if request.user != review.user:
         return redirect('restaurant_detail', restaurant_id=review.restaurant.id)
-    
+
     if request.method == 'POST':
         form = ReviewForm(request.POST, instance=review)
         if form.is_valid():
@@ -163,12 +164,13 @@ def edit_review(request, review_id):
             return redirect('restaurant_detail', restaurant_id=review.restaurant.id)
     else:
         form = ReviewForm(instance=review)
-    
+
     return render(request, 'edit_review.html', {'form': form, 'review': review})
+
 
 def delete_review(request, review_id):
     review = get_object_or_404(Review, pk=review_id)
-    
+
     if request.user == review.user:
         review.delete()
     return redirect('restaurant_detail', restaurant_id=review.restaurant.id)
@@ -176,11 +178,11 @@ def delete_review(request, review_id):
 
 def add_review(request, place_id):
     restaurant = get_object_or_404(Restaurant, place_id=place_id)
-    
+
     if request.method == 'POST':
         rating = request.POST.get('rating')
         text = request.POST.get('text')
-        
+
         # Create the new review
         review = Review.objects.create(
             user=request.user,
@@ -189,8 +191,9 @@ def add_review(request, place_id):
             text=text
         )
         review.save()
-        
+
     return redirect('restaurant_detail', place_id=restaurant.place_id)
+
 
 @login_required
 def change_password_view(request):
@@ -206,6 +209,7 @@ def change_password_view(request):
     else:
         form = PasswordChangeForm(request.user)
     return render(request, 'restaurants/reset.html', {"form": form})
+
 
 def reset_password_view(request):
     if request.method == 'POST':
