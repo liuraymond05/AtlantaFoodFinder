@@ -115,6 +115,9 @@ button:hover {
     align-items: center;
     height: 100vh; /* Full viewport height */
     background-color: #f0f8ff; /* Light Blue background */
+    background-image: url("AFFb.png");
+    background-size: cover;
+    background-position: center;
 }
 
 .wrapper {
@@ -136,6 +139,7 @@ button:hover {
     display: flex;
     align-items: center;
     margin: 15px 0;
+    width: 100%;
 }
 
 .row i {
@@ -148,11 +152,13 @@ label {
 }
 
 input[type="text"],
-input[type="password"] {
+input[type="password"],
+input[type="email"]{
     border: 1px solid #ccc; /* Light gray border */
     border-radius: 4px;
     padding: 10px;
     width: 100%; /* Full width input */
+    box-sizing: border-box;
 }
 
 input[type="submit"] {
