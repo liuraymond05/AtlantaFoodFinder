@@ -1,6 +1,6 @@
 /* General Body Styling */
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Lato', sans-serif;
     background-color: #f0f8ff; /* Light Blue */
     margin: 0;
     padding: 0;
@@ -12,6 +12,7 @@ header {
     color: white;
     padding: 20px;
     text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 nav {
@@ -63,7 +64,7 @@ main {
     padding: 20px;
 }
 
-.hero, .features {
+.hero {
     padding: 20px;
     margin: 20px;
     background-color: white;
@@ -93,6 +94,53 @@ h2 {
 }
 
 /* Other existing styles remain unchanged... */
+/*Features Section */
+.features {
+    padding: 20px;
+    margin: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.features h3 {
+    font-size: 25px;
+    color: #254a7d;
+    margin-bottom: 20px;
+}
+
+.features-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.feature-item {
+    text-align: center;
+    flex-basis: 12%;
+    padding: 20px;
+    background-color: #f0f8ff;
+    border-radius: 100px;
+    transition: background-color 0.3s;
+}
+
+.feature-item:hover {
+    transform: translateY(-5px);
+}
+
+.feature-icon {
+    width: 75px;
+    height: auto;
+    margin-bottom: 2px;
+}
+
+.feature-item p {
+    font-size: 1.1em;
+    color: #333;
+    margin-top: 10px;
+}
+
 
 /* Button styles */
 button {
@@ -207,10 +255,26 @@ footer {
 
 /* Map Styles */
 #map {
-    height: 500px;  /* Height of the map */
+    height: 450px;  /* Height of the map */
     width: 100%;    /* Full width */
     margin-top: 20px; /* Space between the form and the map */
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+
+.map-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px auto;
+    max-width: 1200px;
+    width: 100%;
+    padding: 15px;
+    border-radius: 15px;
+    background-color: #254a7d;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
 
 #searchForm {
     margin-bottom: 20px; /* Space between form and the map */
@@ -232,7 +296,8 @@ footer {
     border: none;
     padding: 10px 20px;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
     transition: background-color 0.3s;
 }
 
@@ -283,11 +348,14 @@ footer {
 /* Selected Restaurant Styling */
 #selected-restaurant {
     margin-top: 20px; /* Space above the selected restaurant display */
-    padding: 15px; /* Padding for the selected restaurant container */
+    padding: 30px; /* Padding for the selected restaurant container */
     border: 1px solid #ccc; /* Light gray border */
-    border-radius: 8px; /* Rounded corners */
+    border-radius: 12px; /* Rounded corners */
     background-color: #ffffff; /* White background for contrast */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    display: flex;
+    align-items: center;
+    flex-direction: column;
 }
 
 #selected-restaurant h3 {
@@ -398,7 +466,7 @@ footer {
 .favorites-link:hover {
     color: #ff6347;
 }
->>>>>>> Stashed changes
+
 
     /* Add some basic styling for success/error messages */
     .success-message {

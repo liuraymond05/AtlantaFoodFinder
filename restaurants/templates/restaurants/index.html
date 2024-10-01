@@ -31,12 +31,25 @@
 
         <section class="features">
             <h3>Features</h3>
-            <ul>
-                <li>Filter by Cuisine Type</li>
-                <li>Sort by Ratings</li>
-                <li>Find Nearby Locations</li>
-                <li>User Reviews and Recommendations</li>
-            </ul>
+            <div class="features-container">
+                <div class="feature-item">
+                    <img src="{% static 'restaurants/cuisine.PNG' %}" alt="cuisine type" class="feature-icon">
+                    <p>Filter by Cuisine Type</p>
+                </div>
+                <div class="feature-item">
+                    <img src="{% static 'restaurants/rating.PNG' %}" alt="rating type" class="feature-icon">
+                    <p>Sort by Ratings</p>
+                </div>
+                <div class="feature-item">
+                    <img src="{% static 'restaurants/location.PNG' %}" alt="location type" class="feature-icon">
+                    <p>Find Nearby Locations</p>
+                </div>
+                <div class="feature-item">
+                    <img src="{% static 'restaurants/suggest.PNG' %}" alt="suggest type" class="feature-icon">
+                    <p>User Reviews and Recommendations</p>
+                </div>
+            </div>
+
         </section>
     </main>
 
