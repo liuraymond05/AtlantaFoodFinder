@@ -85,6 +85,7 @@
     <!-- JavaScript code -->
     <script>
         let map, allMarkers = [], userLocation = null, service, infowindow, autocomplete, restaurantData = [];
+        const currentUser = "{{ request.user.username }}";  // Pass logged-in user's username
 
         function initMap() {
             const location = { lat: 33.77, lng: -84.367 }; // Atlanta coordinates
@@ -222,8 +223,11 @@
                 <option value="4">4 Stars</option>
                 <option value="5">5 Stars</option>
             </select>
-            <textarea id="reviewText-${details.place_id}" placeholder="Enter your review..."></textarea>
-            <button onclick="submitReview('${details.place_id}')">Submit Review</button>
+            <textarea id="reviewText-${details.placeId}" placeholder="Enter your review..."></textarea>
+            <button onclick="submitReview('${details.placeId}')">Submit Review</button>
+            <div id="confirmationMessage-${details.placeId}" style="display: none;"></div>
+            <!-- Add to Favorites Button -->
+            <button id="favoriteButton" onclick="addToFavorites('${details.place_id}')">Save to Favorites</button>
             <div id="confirmationMessage-${details.place_id}" style="display: none;"></div>
             `;
         }
@@ -235,15 +239,26 @@
 
         function formatReviews(reviews) {
             if (!reviews || reviews.length === 0) return 'No reviews available';
-            return reviews.map(review => `
-                <div class="review">
-                    <strong>${review.author_name}</strong> - ${'★'.repeat(Math.round(review.rating))} (${review.rating} stars)
-                    <p>${review.text}</p>
-                    <button onclick="editReview('${review.id}', '${review.place_id}')">Edit</button>
-                    <button onclick="deleteReview('${review.id}', '${review.place_id}')">Delete</button>
-                </div>
-            `).join('');
+            return reviews.map(review => {
+                let reviewButtons = '';
+
+            // Only show Edit/Delete buttons if the current user is the author of the review
+                if (currentUser === review.author_name) {
+                    reviewButtons = `
+                        <button onclick="editReview('${review.id}', '${review.place_id}')">Edit</button>
+                        <button onclick="deleteReview('${review.id}', '${review.place_id}')">Delete</button>
+                    `;
+                }
+                return `
+                    <div class="review">
+                        <strong>${review.author_name}</strong> - ${'★'.repeat(Math.round(review.rating))} (${review.rating} stars)
+                        <p>${review.text}</p>
+                        ${reviewButtons}
+                    </div>
+                `;
+            }).join('');
         }
+
 
         function editReview(reviewId, placeId) {
             fetch(`/get_review/${reviewId}/`)
@@ -317,6 +332,9 @@
         function submitReview(placeId) {
             const rating = document.getElementById(`rating-${placeId}`).value;
             const reviewText = document.getElementById(`reviewText-${placeId}`).value;
+            console.log("Submitting review for placeId:", placeId);
+            console.log("Rating:", rating, "Review Text:", reviewText);
+
 
             if (!rating || !reviewText) {
                 alert("Please fill out all fields.");
@@ -334,9 +352,9 @@
         .then(data => {
             const confirmationMessage = document.getElementById(`confirmationMessage-${placeId}`);
             if (data.success) {
-                confirmationMessage.innerText = "Review submitted successfully!";
-                confirmationMessage.style.display = 'block';
+                alert("Review successfully submitted!")
                 loadReviews(placeId); // Function to reload the reviews for the specific restaurant
+                clearReviewForm(placeId)
             } else if (data.message === 'User not authenticated.') {
                 alert("You must be logged in to write a review. Please log in or sign up.");
                 window.location.href = '/login/'; // Redirect to the login page
@@ -345,6 +363,11 @@
             }
         })
         .catch(error => console.error('Error:', error));
+        }
+
+        function clearReviewForm(placeId) {
+            document.getElementById(`rating-${placeId}`).value = ''; // Clear rating
+            document.getElementById(`reviewText-${placeId}`).value = ''; // Clear review text
         }
 
         function loadReviews(placeId) {
@@ -390,7 +413,7 @@
         }
 
         function addToFavorites(restaurantId) {
-            fetch(`/add_favorite/${restaurantId}/`, {
+            fetch(`/save_favorite/${restaurantId}/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

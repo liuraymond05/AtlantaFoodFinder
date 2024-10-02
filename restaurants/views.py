@@ -97,29 +97,26 @@ def register_view(request):
 # Add a restaurant to favorites
 @login_required
 @require_POST
-def addToFavorites(request):
-    data = json.loads(request.body)
-    place_id = data.get('place_id')
-    restaurant_id = data.get('restaurant_id')
+def save_favorite(request, restaurant_id):
+    if request.method == "POST" and request.user.is_authenticated:
+        restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+        favorite, created = Favorite.objects.get_or_create(user=request.user, restaurant=restaurant)
 
-    if not place_id:
-        return JsonResponse({'success': False, 'error': 'No place_id provided.'})
-
-    user = request.user  # Get the current logged-in user
-    # Create or get the Favorite instance for the user and place_id
-    favorite, created = Favorite.objects.get_or_create(user=user, place_id=place_id)
-
-    if created:
-        return JsonResponse({'success': True, 'message': 'Added to favorites!'})
-    else:
-        return JsonResponse({'success': False, 'error': 'Restaurant already in favorites.'})
+        if created:
+            return JsonResponse({'message': 'Restaurant added to favorites!'}, status=201)
+        else:
+            return JsonResponse({'message': 'Restaurant is already in favorites.'}, status=409)
+    return JsonResponse({'message': 'User not authenticated.'}, status=403)
 
 # Remove a restaurant from favorites
 @login_required
-def remove_favorite(request, place_id):
-    restaurant = get_object_or_404(Restaurant, place_id=place_id)
-    Favorite.objects.filter(user=request.user, restaurant=restaurant).delete()
-    return redirect('favorites')
+def remove_favorite(request, favorite_id):
+    try:
+        favorite = Favorite.objects.get(id=favorite_id, user=request.user)
+        favorite.delete()
+        return JsonResponse({'message': 'Favorite removed successfully.'}, status=200)
+    except Favorite.DoesNotExist:
+        return JsonResponse({'message': 'Favorite not found.'}, status=404)
 
 
 # View user's favorites
@@ -131,24 +128,6 @@ def favorites_view(request):
 
 class HomeView(TemplateView):
     template_name = 'restaurants/index.html'  # Ensure this path is correct
-
-
-def restaurant_detail(request, restaurant_id):
-    restaurant = get_object_or_404(Restaurant, pk=restaurant_id)
-    reviews = Review.objects.filter(restaurant=restaurant)
-
-    if request.method == 'POST':
-        form = ReviewForm(request.POST)
-        if form.is_valid():
-            review = form.save(commit=False)
-            review.user = request.user
-            review.restaurant = restaurant
-            review.save()
-            return redirect('restaurant_detail', restaurant_id=restaurant.id)
-    else:
-        form = ReviewForm()
-
-    return render(request, 'restaurant_detail.html', {'restaurant': restaurant, 'reviews': reviews, 'form': form})
 
 
 def edit_review(request, review_id):
@@ -178,24 +157,24 @@ def delete_review(request, review_id):
             return JsonResponse({'success': False, 'message': 'User not authenticated.'})
     return JsonResponse({'success': False, 'message': 'Invalid request.'})
 
-
 def add_review(request, place_id):
-    restaurant = get_object_or_404(Restaurant, place_id=place_id)
-
     if request.method == 'POST':
-        rating = request.POST.get('rating')
-        text = request.POST.get('text')
-
-        # Create the new review
-        review = Review.objects.create(
-            user=request.user,
-            restaurant=restaurant,
-            rating=rating,
-            text=text
-        )
-        review.save()
-
-    return redirect('restaurant_detail', place_id=restaurant.place_id)
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            rating = data.get('rating')
+            review_text = data.get('reviewText')
+            
+            # Create the new review instance (assuming you have a Review model)
+            review = Review.objects.create(
+                user=request.user,
+                place_id=place_id,
+                rating=rating,
+                review_text=review_text,
+            )
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'message': 'User not authenticated.'})
+    return JsonResponse({'success': False, 'message': 'Invalid request.'})
 
 def submit_review(request, place_id):
     if request.method == 'POST':
