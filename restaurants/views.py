@@ -169,11 +169,14 @@ def edit_review(request, review_id):
 
 
 def delete_review(request, review_id):
-    review = get_object_or_404(Review, pk=review_id)
-
-    if request.user == review.user:
-        review.delete()
-    return redirect('restaurant_detail', restaurant_id=review.restaurant.id)
+    if request.method == 'DELETE':
+        if request.user.is_authenticated:
+            review = get_object_or_404(Review, id=review_id, user=request.user)
+            review.delete()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'message': 'User not authenticated.'})
+    return JsonResponse({'success': False, 'message': 'Invalid request.'})
 
 
 def add_review(request, place_id):
@@ -193,6 +196,35 @@ def add_review(request, place_id):
         review.save()
 
     return redirect('restaurant_detail', place_id=restaurant.place_id)
+
+def submit_review(request, place_id):
+    if request.method == 'POST':
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            rating = data.get('rating')
+            review_text = data.get('reviewText')
+
+            # Here you can create a Review linked to the restaurant identified by place_id
+            review = Review.objects.create(
+                restaurant_id=place_id,  # Modify this as needed
+                user=request.user,
+                rating=rating,
+                review_text=review_text
+            )
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'message': 'User not authenticated.'})
+    return JsonResponse({'success': False, 'message': 'Invalid request.'})
+
+def get_reviews(request, review_id):
+    review = get_object_or_404(Review, id=review_id)
+    return JsonResponse({
+        'success': True,
+        'review': {
+            'rating': review.rating,
+            'review_text': review.review_text,
+        }
+    })
 
 
 @login_required
@@ -229,3 +261,16 @@ def reset_password_view(request):
     else:
         form = PasswordResetCustomForm()
     return render(request, 'restaurants/reset.html', {"form": form})
+
+def update_review(request, review_id):
+    if request.method == 'POST':
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            review = get_object_or_404(Review, id=review_id, user=request.user)
+            review.rating = data.get('rating')
+            review.review_text = data.get('reviewText')
+            review.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'message': 'User not authenticated.'})
+    return JsonResponse({'success': False, 'message': 'Invalid request.'})

@@ -83,7 +83,7 @@
         let map, allMarkers = [], userLocation = null, service, infowindow, autocomplete, restaurantData = [];
 
         function initMap() {
-            const location = { lat: 33.749, lng: -84.388 }; // Atlanta coordinates
+            const location = { lat: 33.77, lng: -84.367 }; // Atlanta coordinates
             map = new google.maps.Map(document.getElementById('map'), {
                 center: location,
                 zoom: 12,
@@ -113,7 +113,7 @@
             const request = {
                 location: location,
                 radius: 10000,
-                types: ['restaurant'],
+                types: ['restaurant', 'fast_food', 'food'],
             };
             service.nearbySearch(request, handleNearbyResults);
         }
@@ -206,10 +206,27 @@
                 <h4>Cuisine Type:</h4>
                 <p>${details.types.join(', ') || 'N/A'}</p>
                 <h4>Reviews:</h4>
-                <div class="reviews">${formatReviews(details.reviews)}</div>
-                <button id="favoriteButton" onclick="addToFavorites('${details.place_id}', '${details.id}')">Add to Favorites</button> <!-- Pass restaurant ID -->
-                <div id="favoriteMessage" style="display: none;"></div>
+                <div class="reviews" id="reviews-${details.place_id}">${formatReviews(details.reviews)}</div>
+        
+                <!-- Review Form -->
+                <h4>Write a Review</h4>
+                <select id="rating-${details.place_id}">
+                <option value="">Select a rating</option>
+                <option value="1">1 Star</option>
+                <option value="2">2 Stars</option>
+                <option value="3">3 Stars</option>
+                <option value="4">4 Stars</option>
+                <option value="5">5 Stars</option>
+            </select>
+            <textarea id="reviewText-${details.place_id}" placeholder="Enter your review..."></textarea>
+            <button onclick="submitReview('${details.place_id}')">Submit Review</button>
+            <div id="confirmationMessage-${details.place_id}" style="display: none;"></div>
             `;
+        }
+
+        //review form submission
+        function openReviewForm(placeId) {
+            window.location.href = '/write_review/${placeId}/';
         }
 
         function formatReviews(reviews) {
@@ -218,8 +235,122 @@
                 <div class="review">
                     <strong>${review.author_name}</strong> - ${'★'.repeat(Math.round(review.rating))} (${review.rating} stars)
                     <p>${review.text}</p>
+                    <button onclick="editReview('${review.id}', '${review.place_id}')">Edit</button>
+                    <button onclick="deleteReview('${review.id}', '${review.place_id}')">Delete</button>
                 </div>
             `).join('');
+        }
+
+        function editReview(reviewId, placeId) {
+            fetch(`/get_review/${reviewId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById(`rating-${placeId}`).value = data.review.rating;
+                        document.getElementById(`reviewText-${placeId}`).value = data.review.review_text;
+                
+                        const submitButton = document.getElementById(`submitReviewButton-${placeId}`);
+                        submitButton.innerText = 'Update Review';
+                        submitButton.setAttribute('onclick', `updateReview('${reviewId}', '${placeId}')`);
+                    } else {
+                        alert("Failed to fetch review details.");
+                    }
+                })
+                .catch(error => console.error('Error fetching review details:', error));
+        }
+
+        function updateReview(reviewId, placeId) {
+            const rating = document.getElementById(`rating-${placeId}`).value;
+            const reviewText = document.getElementById(`reviewText-${placeId}`).value;
+
+            if (!rating || !reviewText) {
+                alert("Please fill out all fields.");
+                return;
+            }
+
+            fetch(`/update_review/${reviewId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({ rating, reviewText }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Review updated successfully!");
+                    loadReviews(placeId); // Reload reviews
+                } else {
+                    alert("Failed to update review: " + data.message);
+                }
+            })
+            .catch(error => console.error('Error updating review:', error));
+        }
+
+        function deleteReview(reviewId, placeId) {
+            if (confirm("Are you sure you want to delete this review?")) {
+                fetch(`/delete_review/${reviewId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Review deleted successfully!");
+                    loadReviews(placeId); // Reload reviews
+                } else {
+                    alert("Failed to delete review: " + data.message);
+                }
+            })
+            .catch(error => console.error('Error deleting review:', error));
+        }
+    }
+
+        function submitReview(placeId) {
+            const rating = document.getElementById(`rating-${placeId}`).value;
+            const reviewText = document.getElementById(`reviewText-${placeId}`).value;
+
+            if (!rating || !reviewText) {
+                alert("Please fill out all fields.");
+                return;
+            }
+            fetch(`/submit_review/${placeId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({ rating, reviewText }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            const confirmationMessage = document.getElementById(`confirmationMessage-${placeId}`);
+            if (data.success) {
+                confirmationMessage.innerText = "Review submitted successfully!";
+                confirmationMessage.style.display = 'block';
+                loadReviews(placeId); // Function to reload the reviews for the specific restaurant
+            } else if (data.message === 'User not authenticated.') {
+                alert("You must be logged in to write a review. Please log in or sign up.");
+                window.location.href = '/login/'; // Redirect to the login page
+            } else {
+                alert("Failed to submit review: " + data.message);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+        }
+
+        function loadReviews(placeId) {
+            fetch(`/get_reviews/${placeId}/`) // Endpoint to fetch reviews for the specific place
+                .then(response => response.json())
+                .then(data => {
+                    const reviewsContainer = document.getElementById(`reviews-${placeId}`);
+                    reviewsContainer.innerHTML = formatReviews(data.reviews); // Assume the API returns a list of reviews
+                })
+                .catch(error => console.error('Error loading reviews:', error));
         }
 
         function getUserLocation() {
