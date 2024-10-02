@@ -54,7 +54,11 @@
     {% include 'restaurants/banner.html' %}
 </header>
 <body class="bottom-padding">
-    <h1>Find Food Near You</h1>
+    <div class="header-container">
+        <img src="{% static 'restaurants/spoon.png' %}" alt="left" class="utensil-icon">
+        <h1>Find Food Near You</h1>
+        <img src="{% static 'restaurants/spoon.png' %}" alt="left" class="utensil-icon">
+    </div>
 
     <button onclick="getUserLocation()">Find My Location</button>
     <a href="{% url 'home' %}" class="return-homepage">Return to Homepage</a>
