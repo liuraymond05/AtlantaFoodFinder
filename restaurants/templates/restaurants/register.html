@@ -50,9 +50,9 @@
             <div class="row button">
                 <input type="submit" value="Register">
             </div>
-            {% if form.errors %}
+            {% if form.password2.errors %}
             <div class="error">
-                {{ form.errors }}
+                {{ form.password2.errors }}
             </div>
             {% endif %}
             <div id="password-hints" class="hint">

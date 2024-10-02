@@ -15,6 +15,28 @@
         function hideHints() {
             document.getElementById('password-hints').style.display = 'none';
         }
+        document.addEventListener("DOMContentLoaded", function() {
+            const passwordInputs = document.querySelectorAll('input[type="password"]');
+            const hints = document.getElementById('password-hints')
+
+            passwordInputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    hints.style.display = 'block'
+                });
+                input.addEventListener('blur', function() {
+                    setTimeout(() => {
+                        if(!input.value) {
+                            hints.style.display = 'none';
+                        }
+                    }, 200);
+                });
+            });
+
+            const form = document.querySelector('form[name="ResetPasswordForm"]');
+            form.addEventListener('submit', function() {
+                hints.style.display = 'none';
+            });
+        });
     </script>
 </head>
 <body>
@@ -23,24 +45,7 @@
         <div class="title"><span>Reset Your Password!</span></div>
         <form name="ResetPasswordForm" action="{% url 'reset' %}" method="post">
             {% csrf_token %}
-            <div class="row">
-                <i class="fas fa-lock"></i>
-                <label>
-                    <input type="text" id='id_username' name="username" placeholder="Enter your username" required>
-                </label>
-            </div>
-            <div class="row">
-                <i class="fas fa-lock"></i>
-                <label>
-                    <input type="password" id='id_new_password1' name="new_password1" placeholder="Enter a new password" required onfocus="showHints()" onblur="hideHints()">
-                </label>
-            </div>
-            <div class="row">
-                <i class="fas fa-lock"></i>
-                <label>
-                    <input type="password" id='id_password2' name="new_password2" placeholder="Confirm your password">
-                </label>
-            </div>
+            {{ form.as_p }}
             <div class="row button">
                 <input type="submit" value="Reset Password">
             </div>
