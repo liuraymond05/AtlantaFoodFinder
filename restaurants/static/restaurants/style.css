@@ -3,8 +3,8 @@ body {
     font-family: 'Lato', sans-serif;
     background-color: #f0f8ff; /* Light Blue */
     margin: 0;
-    padding: 0;
     color: #333; /* Dark gray for text */
+    padding-bottom: 0;
 }
 
 header {
@@ -141,6 +141,19 @@ h2 {
     margin-top: 10px;
 }
 
+.header-container1 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+    height: 75px;
+    overflow: hidden;
+}
+
+.logo {
+    width: 300px;
+    height: auto;
+}
 
 /* Button styles */
 button {
@@ -248,8 +261,9 @@ footer {
     color: white;
     text-align: center;
     padding: 10px;
-    position: fixed;
+    position: relative;
     width: 100%;
+    height: 40px;
     bottom: 0;
 }
 
@@ -257,7 +271,7 @@ footer {
 #map {
     height: 450px;  /* Height of the map */
     width: 100%;    /* Full width */
-    margin-top: 20px; /* Space between the form and the map */
+    margin-top: 2px;/* Space between the form and the map */
     border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -275,6 +289,24 @@ footer {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
+.header-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.header-container1 {
+    margin: 0 15px;
+    font-family: 'Lato', sans-serif;
+    font-size: 30px;
+    color: #254a7d;
+}
+
+.utensil-icon {
+    width: 50px;
+    height: auto;
+}
 
 #searchForm {
     margin-bottom: 20px; /* Space between form and the map */
@@ -420,16 +452,33 @@ footer {
 
 /* Banner Styles */
 .banner {
+    background-color: #1e3a6f;
+    background-image: url("ATL.png");
+    background-size: cover;
+    background-position: center;
+    height: 30px;
+    position: relative;
     display: flex;
     justify-content: flex-end;
-    background-color: #1e3a6f;
     padding: 10px;
 }
+
+.banner::after{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
 
 .profile {
     position: relative;
     display: flex;
     align-items: center;
+    z-index: 2;
 }
 
 .profile-pic {
@@ -467,6 +516,15 @@ footer {
     color: #ff6347;
 }
 
+.logout-link {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+}
+
+.logout-link:hover {
+    color: #ff6347;
+}
 
     /* Add some basic styling for success/error messages */
     .success-message {
