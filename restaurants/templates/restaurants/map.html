@@ -112,20 +112,16 @@
         function loadAllRestaurants(location) {
             const request = {
                 location: location,
-                radius: 10000,
+                radius: 5000,
                 types: ['restaurant'],
             };
             service.nearbySearch(request, handleNearbyResults);
         }
 
-        function handleNearbyResults(results, status, pagination) {
+        function handleNearbyResults(results, status) {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
+                clearMarkers();
                 results.forEach(createMarker);
-                if (pagination && pagination.hasNextPage) {
-                    setTimeout(() => {
-                        pagination.nextPage();
-                    }, 1000);
-                } 
             } else {
                 alert("Error fetching restaurant data: " + status);
             }
