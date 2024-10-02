@@ -97,16 +97,23 @@ def register_view(request):
 # Add a restaurant to favorites
 @login_required
 @require_POST
-def save_favorite(request, restaurant_id):
-    if request.method == "POST" and request.user.is_authenticated:
-        restaurant = get_object_or_404(Restaurant, id=restaurant_id)
-        favorite, created = Favorite.objects.get_or_create(user=request.user, restaurant=restaurant)
+@login_required
+@require_POST
+def save_favorite(request):
+    data = json.loads(request.body)
+    restaurant_name = data.get('name')  # Get the name from the request data
 
-        if created:
-            return JsonResponse({'message': 'Restaurant added to favorites!'}, status=201)
-        else:
-            return JsonResponse({'message': 'Restaurant is already in favorites.'}, status=409)
-    return JsonResponse({'message': 'User not authenticated.'}, status=403)
+    # Fetch the restaurant based on the name
+    restaurant = get_object_or_404(Restaurant, name=restaurant_name)
+
+    # Create or get the favorite
+    favorite, created = Favorite.objects.get_or_create(user=request.user, restaurant=restaurant)
+
+    if created:
+        return JsonResponse({'message': 'Restaurant added to favorites!'}, status=201)
+    else:
+        return JsonResponse({'message': 'Restaurant is already in favorites.'}, status=409)
+
 
 # Remove a restaurant from favorites
 @login_required
@@ -163,7 +170,7 @@ def add_review(request, place_id):
             data = json.loads(request.body)
             rating = data.get('rating')
             review_text = data.get('reviewText')
-            
+
             # Create the new review instance (assuming you have a Review model)
             review = Review.objects.create(
                 user=request.user,

@@ -10,9 +10,9 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('register/', views.register_view, name='register'),
     path('favorites/', views.favorites_view, name='favorite'),
-    path('save_favorite/<int:restaurant_id>/', save_favorite, name='save_favorite'),
+    path('add_to_favorites/', save_favorite, name='save_favorite'),
     path('remove_favorite/<str:favorite_id>/', views.remove_favorite, name='remove_favorite'),
     path('restaurant/<str:place_id>/add_review/', views.add_review, name='add_review'),
-    path ('change/', views.change_password_view, name='change'),
+    path('change/', views.change_password_view, name='change'),
     path('reset/', views.reset_password_view, name='reset'),
 ]
