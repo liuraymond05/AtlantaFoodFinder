@@ -9,9 +9,12 @@ from django.views.generic import TemplateView
 from .models import Restaurant, Favorite, Review
 from .forms import CustomUserForm, ReviewForm, PasswordResetCustomForm
 from django.contrib.auth import update_session_auth_hash
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.forms import PasswordChangeForm
 import json
 import requests
+from django.template.loader import get_template
+from django.template import TemplateDoesNotExist
 
 
 # View to render the map and restaurant markers
@@ -97,40 +100,81 @@ def register_view(request):
 # Add a restaurant to favorites
 @login_required
 @require_POST
-@login_required
-@require_POST
-def save_favorite(request):
-    data = json.loads(request.body)
-    restaurant_name = data.get('name')  # Get the name from the request data
+def add_to_favorites(request):
+   print("Received request to add to favorites")
 
-    # Fetch the restaurant based on the name
-    restaurant = get_object_or_404(Restaurant, name=restaurant_name)
+   if request.method == 'POST':
+       user = request.user
+       print(f"Request method: {request.method}")
+       print(f"User authenticated: {user.is_authenticated}")
 
-    # Create or get the favorite
-    favorite, created = Favorite.objects.get_or_create(user=request.user, restaurant=restaurant)
 
-    if created:
-        return JsonResponse({'message': 'Restaurant added to favorites!'}, status=201)
-    else:
-        return JsonResponse({'message': 'Restaurant is already in favorites.'}, status=409)
+       if user.is_authenticated:
+           data = json.loads(request.body)
+           print(f"Request body data: {data}")
 
+
+           restaurant_id = data.get('restaurant_id')
+           restaurant_name = data.get('restaurant_name', restaurant_id)
+           cuisine_type = data.get('cuisine_type', 'General')
+           address = data.get('address', 'No address provided')
+
+
+           print(f"Restaurant ID: {restaurant_id}")
+           print(f"Restaurant Name: {restaurant_name}")
+           print(f"Cuisine Type: {cuisine_type}")
+           print(f"Address: {address}")
+
+
+           # Try to get the restaurant
+           try:
+               restaurant = Restaurant.objects.get(place_id=restaurant_id)
+               print(f"Restaurant found: {restaurant}")
+           except Restaurant.DoesNotExist:
+               print(f"Restaurant with place_id {restaurant_id} does not exist. Creating new restaurant.")
+               restaurant = Restaurant.objects.create(
+                   place_id=restaurant_id,
+                   name=restaurant_name,
+                   cuisine_type=cuisine_type,
+                   address=address,
+               )
+               print(f"Created new restaurant: {restaurant}")
+
+
+           # Check if it's already in the user's favorites
+           if not Favorite.objects.filter(user=user, restaurant=restaurant).exists():
+               Favorite.objects.create(user=user, restaurant=restaurant)
+               print(f"Added {restaurant.name} to favorites for user {user.username}.")
+               return JsonResponse({'status': 'success', 'message': 'Restaurant added to favorites'})
+           else:
+               print(f"{restaurant.name} is already in favorites for user {user.username}.")
+               return JsonResponse({'status': 'error', 'message': 'Already in favorites'})
+
+
+       print("User not authenticated")
+       return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
+
+
+   print("Invalid request method")
+   return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
 # Remove a restaurant from favorites
 @login_required
 def remove_favorite(request, favorite_id):
-    try:
-        favorite = Favorite.objects.get(id=favorite_id, user=request.user)
-        favorite.delete()
-        return JsonResponse({'message': 'Favorite removed successfully.'}, status=200)
-    except Favorite.DoesNotExist:
-        return JsonResponse({'message': 'Favorite not found.'}, status=404)
+    favorite = get_object_or_404(Favorite, id=favorite_id, user=request.user)
+    favorite.delete()  # Remove the favorite
+    messages.success(request, 'Favorite removed successfully.')  # Feedback message
+    return redirect('favorites')  # Redirect to the favorites page
 
-
-# View user's favorites
 @login_required
 def favorites_view(request):
-    favorites = Favorite.objects.filter(user=request.user).select_related('restaurant')
-    return render(request, 'restaurants/favorites.html', {'favorites': favorites})
+    if request.user.is_authenticated:
+        favorites = request.user.favorites.all()  # Accessing favorites through related_name
+        if not favorites.exists():
+            messages.info(request, 'You have no favorites yet.')  # Feedback message if no favorites
+        return render(request, 'restaurants/favorites.html', {'favorites': favorites})
+    else:
+        return redirect('login')  # or whatever your login view is
 
 
 class HomeView(TemplateView):

@@ -87,11 +87,13 @@
         <div id="map"></div>
     </div>
 
+
     <script>
         let map, allMarkers = [], userLocation = null, service, infowindow, autocomplete;
 
         // Common cuisines to check against
         const cuisines = ["Chinese", "Italian", "Mexican", "Indian", "Japanese", "Thai", "American", "Mediterranean", "Asian", "Breakfast"];
+        const csrftoken = '{{ csrf_token }}';
 
         function initMap() {
             const location = { lat: 33.749, lng: -84.388 }; // Default to Atlanta coordinates
@@ -220,6 +222,9 @@
             allMarkers = [];
         }
 
+        console.log("CSRF Token:", csrftoken);
+
+
         function createMarker(place, cuisineType) {
             const marker = new google.maps.Marker({
                 map: map,
@@ -235,10 +240,44 @@
                         const content = generateInfoWindowContent(details, cuisineType, place);
                         infowindow.setContent(content);
                         infowindow.open(map, marker);
+
+                        // Add event listener here after content is set
+                        const addToFavoritesButton = document.getElementById('addToFavoritesButton');
+                        addToFavoritesButton.addEventListener('click', async function() {
+                            const restaurantId = this.getAttribute('data-restaurant-id');
+                            const csrftoken = '{{ csrf_token }}'; // CSRF token
+
+                            try {
+                                const response = await fetch('/restaurants/add_to_favorites/', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': csrftoken,
+                                    },
+                                    body: JSON.stringify({ restaurant_id: restaurantId }),
+                                });
+
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
+                                }
+
+                                const result = await response.json();
+                                if (result.status === 'success') {
+                                    alert('Added to favorites!');
+                                } else {
+                                    alert(result.message);
+                                }
+                            } catch (error) {
+                                console.error('Error adding to favorites:', error);
+                                alert('Failed to add to favorites. Please try again.');
+                            }
+                        });
                     }
                 });
             });
         }
+
+
 
         function generateInfoWindowContent(details, cuisineType, place) {
             return `
@@ -251,10 +290,120 @@
                     <p>${cuisineType}</p>
                     <h4>Reviews:</h4>
                     <div class="reviews">${formatReviews(details.reviews)}</div>
-                    <button class="add-to-favorites" data-restaurant-id="${details.name}">Add to Favorites</button>
+
+                    <button id="addToFavoritesButton"
+                        data-restaurant-id="${place.place_id}"
+                        data-restaurant-name="${details.name}"
+                        data-cuisine-type="${cuisineType}"
+                        data-address="${details.formatted_address}">
+                    Add to Favorites
+                </button>
                 </div>
             `;
         }
+
+        function fetchAndDisplayRestaurants(results) {
+            const resultsContainer = document.getElementById('results-container'); // Adjust this to your actual container ID
+            resultsContainer.innerHTML = ''; // Clear previous results
+
+            results.forEach(place => {
+                const li = document.createElement('li');
+                li.className = 'result-item';
+                li.innerHTML = `
+                    <h3>${place.name}</h3>
+                    <p>Rating: ${place.rating || 'N/A'} (${place.user_ratings_total || 0} reviews)</p>
+                    <p>Address: ${place.formatted_address || 'N/A'}</p>
+                    <p>Cuisine: ${place.types?.join(', ') || 'N/A'}</p>
+                    <button class="add-to-favorites"
+                            data-id="${place.place_id}"
+                            data-name="${place.name}"
+                            data-cuisine="${place.types?.join(', ') || 'N/A'}">
+                        Add to Favorites
+                    </button>
+                `;
+                resultsContainer.appendChild(li);
+            });
+
+            // Add event listener for "Add to Favorites" buttons
+            resultsContainer.addEventListener('click', function(event) {
+                if (event.target.classList.contains('add-to-favorites')) {
+                    const button = event.target;
+                    const placeId = button.getAttribute('data-id');
+                    const restaurantName = button.getAttribute('data-name');
+                    const cuisineType = button.getAttribute('data-cuisine');
+
+                    // Call the addToFavorites function with the retrieved data
+                    addToFavorites(placeId, restaurantName, cuisineType);
+                }
+            });
+        }
+
+
+        function addToFavorites(placeId, restaurantName, cuisineType) {
+            const data = {
+                restaurant_id: placeId,
+                restaurant_name: restaurantName,
+                cuisine_type: cuisineType
+            };
+
+            fetch('/add_to_favorites/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')  // Include CSRF token for security
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+
+        // Event delegation to handle 'Add to Favorites' button clicks for dynamically created buttons
+        document.addEventListener('click', async function(event) {
+            if (event.target && event.target.id === 'addToFavoritesButton') {
+                console.log("Add to Favorites button clicked"); // Log button click
+                const restaurantId = event.target.getAttribute('data-restaurant-id');
+                const csrftoken = '{{ csrf_token }}';
+
+                console.log("Restaurant ID:", restaurantId); // Log the restaurant ID being sent
+
+                try {
+                    const response = await fetch('/restaurants/add_to_favorites/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken,
+                        },
+                        body: JSON.stringify({ restaurant_id: restaurantId }),
+                    });
+
+                    console.log("Response status:", response.status); // Log response status
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const result = await response.json();
+                    console.log("Response data:", result); // Log the result from the server
+                    if (result.status === 'success') {
+                        alert('Added to favorites!');
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (error) {
+                    console.error('Error adding to favorites:', error);
+                    alert('Failed to add to favorites. Please try again.');
+                }
+            }
+        });
 
         function formatReviews(reviews) {
             if (!reviews) return '<p>No reviews available.</p>';
@@ -269,32 +418,22 @@
             `).join('');
         }
 
-        // Function to add restaurant to favorites
-        document.addEventListener('click', function(event) {
-            if (event.target.classList.contains('add-to-favorites')) {
-                const restaurantName = event.target.dataset.restaurantId;
-                addToFavorites(restaurantName);
-            }
-        });
-
-        function addToFavorites(restaurantName) {
-            fetch(`add_to_favorites/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}' // Ensure CSRF protection
-                },
-                body: JSON.stringify({ name: restaurantName })
-            })
-            .then(response => {
-                if (response.ok) {
-                    alert(`${restaurantName} has been added to your favorites!`);
-                } else {
-                    alert('Failed to add to favorites.');
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Check if this cookie string begins with the name we want
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
-            })
-            .catch(error => console.error('Error:', error));
+            }
+            return cookieValue;
         }
+
     </script>
 
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places&callback=initMap"></script>

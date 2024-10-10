@@ -25,22 +25,6 @@ function initMap() {
     });
 }
 
-function saveFavorite(restaurantId) {
-    fetch(`/save_favorite/${restaurantId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCSRFToken(), // CSRF protection
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Restaurant saved to favorites!');
-        } else {
-            alert(data.message);
-        }
-    });
-}
 
 function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
