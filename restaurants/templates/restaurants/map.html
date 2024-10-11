@@ -248,13 +248,27 @@
         }
 
         function guessCuisineType(restaurantName) {
-            for (const cuisine of cuisines) {
-                if (restaurantName.toLowerCase().includes(cuisine.toLowerCase())) {
-                    return cuisine;
-                }
-            }
-            return "Not Specified";
+    const searchQuery = document.getElementById('searchName').value.toLowerCase(); // User's input
+    const commonCuisines = cuisines.map(cuisine => cuisine.toLowerCase()); // Lowercase cuisines for comparison
+
+    // Check if the user's search query matches any known cuisines
+    for (const cuisine of commonCuisines) {
+        if (searchQuery.includes(cuisine)) {
+            return cuisine.charAt(0).toUpperCase() + cuisine.slice(1); // Return matched cuisine in title case
         }
+    }
+
+    // If no match from user input, check restaurant name for common cuisines
+    for (const cuisine of commonCuisines) {
+        if (restaurantName.toLowerCase().includes(cuisine)) {
+            return cuisine.charAt(0).toUpperCase() + cuisine.slice(1); // Return matched cuisine in title case
+        }
+    }
+
+    // If no matches found, return 'Not Specified'
+    return "Not Specified";
+}
+
 
         function clearMarkers() {
             allMarkers.forEach(marker => marker.setMap(null));
