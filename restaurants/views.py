@@ -114,7 +114,10 @@ def add_to_favorites(request):
         restaurant_id = data.get('restaurant_id')
         restaurant_name = data.get('restaurant_name')
         cuisine_type = data.get('cuisine_type', 'General')
-        rating = data.get('rating')
+        try:
+            rating = float(data.get('rating'))  # Try to convert to a number
+        except (TypeError, ValueError):
+            rating = None  # Set to None if conversion fails
 
         print(f"Restaurant ID: {restaurant_id}")
         print(f"Restaurant Name: {restaurant_name}")

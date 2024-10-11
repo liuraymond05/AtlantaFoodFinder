@@ -407,10 +407,11 @@
                    const placeId = button.getAttribute('data-id');
                    const restaurantName = button.getAttribute('data-name');
                    const cuisineType = button.getAttribute('data-cuisine');
+                   const rating = button.getAttribute('data-rating');
 
 
                    // Call the addToFavorites function with the retrieved data
-                   addToFavorites(placeId, restaurantName, cuisineType);
+                   addToFavorites(placeId, restaurantName, cuisineType, rating);
                }
            });
         }
@@ -418,7 +419,7 @@
 
 
 
-        function addToFavorites(placeId, restaurantName, cuisineType) {
+        function addToFavorites(placeId, restaurantName, cuisineType, rating) {
           const data = {
             restaurant_id: placeId,
             restaurant_name: restaurantName,
