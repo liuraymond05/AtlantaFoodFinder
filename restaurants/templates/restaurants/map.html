@@ -107,6 +107,7 @@
             infowindow = new google.maps.InfoWindow();
             autocomplete = new google.maps.places.Autocomplete(document.getElementById('searchName'));
             autocomplete.bindTo('bounds', map);
+            loadRestaurantsNearby(location);    
 
             // Handle place change for autocomplete
             autocomplete.addListener('place_changed', () => {
@@ -150,16 +151,21 @@
         function loadRestaurantsNearby(location) {
             const request = {
                 location: location,
-                radius: 5000, // Set a radius to get more restaurants
-                types: ['restaurant']
+                radius: 15000, // Set a radius to get more restaurants
+                types: ['restaurant', 'cafe', 'food', 'fast_food']
             };
             service.nearbySearch(request, handleNearbyResults);
         }
 
-        function handleNearbyResults(results, status) {
+        function handleNearbyResults(results, status, pagination) {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
-                clearMarkers();
                 results.forEach(createMarker);
+                if (pagination && pagination.hasNextPage) {
+                // Automatically load the next page after a small delay
+                    setTimeout(() => {
+                        pagination.nextPage();
+                    }, 200);
+                } 
                 map.setZoom(12); // Adjust zoom level after loading nearby restaurants
             } else {
                 alert("Error fetching restaurant data: " + status);
