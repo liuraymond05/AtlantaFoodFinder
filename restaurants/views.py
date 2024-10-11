@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages, auth
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
@@ -102,8 +102,8 @@ def register_view(request):
 @require_POST
 def add_to_favorites(request):
     print("Received request to add to favorites")
-
     user = request.user
+
     print(f"Request method: {request.method}")
     print(f"User authenticated: {user.is_authenticated}")
 
@@ -112,16 +112,17 @@ def add_to_favorites(request):
         print(f"Request body data: {data}")
 
         restaurant_id = data.get('restaurant_id')
-        restaurant_name = data.get('restaurant_name', restaurant_id)
+        restaurant_name = data.get('restaurant_name')
         cuisine_type = data.get('cuisine_type', 'General')
-        address = data.get('address', 'No address provided')
+        rating = data.get('rating')
 
         print(f"Restaurant ID: {restaurant_id}")
         print(f"Restaurant Name: {restaurant_name}")
         print(f"Cuisine Type: {cuisine_type}")
-        print(f"Address: {address}")
+        print(f"Rating: {rating}")
 
         # Try to get the restaurant
+
         restaurant = Restaurant.objects.filter(place_id=restaurant_id).first()
 
         if restaurant is None:
@@ -130,7 +131,7 @@ def add_to_favorites(request):
                 place_id=restaurant_id,
                 name=restaurant_name,
                 cuisine_type=cuisine_type,
-                address=address,
+                rating=rating,
             )
             print(f"Created new restaurant: {restaurant}")
 
@@ -139,22 +140,25 @@ def add_to_favorites(request):
             Favorite.objects.create(user=user, restaurant=restaurant)
             print(f"Added {restaurant.name} to favorites for user {user.username}.")
             return JsonResponse({'status': 'success', 'message': 'Restaurant added to favorites'})
+
         else:
             print(f"{restaurant.name} is already in favorites for user {user.username}.")
             return JsonResponse({'status': 'error', 'message': 'Already in favorites'})
 
+
     print("User not authenticated")
     return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
-
-
 
 # Remove a restaurant from favorites
 @login_required
 def remove_favorite(request, favorite_id):
-    favorite = get_object_or_404(Favorite, id=favorite_id, user=request.user)
+  favorite = get_object_or_404(Favorite, id=favorite_id)
+  if favorite.user == request.user:  # Check if user owns the favorite
     favorite.delete()  # Remove the favorite
     messages.success(request, 'Favorite removed successfully.')  # Feedback message
     return redirect('favorites')  # Redirect to the favorites page
+  else:
+    return HttpResponseForbidden("You can't remove favorites you don't own.")  # Handle unauthorized access
 
 @login_required
 def favorites_view(request):

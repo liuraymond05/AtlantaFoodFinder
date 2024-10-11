@@ -42,10 +42,8 @@
                         <h3>{{ favorite.restaurant.name }}</h3>
                         <p>Rating: {{ favorite.restaurant.rating }}</p>
                         <p>Cuisine: {{ favorite.restaurant.cuisine_type }}</p>
-                        <p>Address: {{ favorite.restaurant.address }}</p>
                     </div>
-                    {{ favorite.name }}
-                    <button onclick="removeFavorite('{{ favorite.id }}')">Remove</button>
+                    <!-- <button onclick="removeFavorite('{{ favorite.restaurant.name }}')">Remove</button> -->
                 </div>
             {% endfor %}
         {% else %}
@@ -59,28 +57,27 @@
         const csrfToken = '{{ csrf_token }}';
 
         function removeFavorite(favoriteId) {
-            console.log("Removing favorite with ID:", favoriteId); // Debug log
-            if (confirm("Are you sure you want to remove this restaurant from your favorites?")) {
-                fetch(`/remove_favorite/${favoriteId}/`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'Content-Type': 'application/json',
-                    },
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert("Restaurant removed from favorites.");
-                        location.reload();
-                    } else {
-                        alert("Failed to remove the restaurant from favorites.");
-                        console.error("Response status:", response.status); // Log the status
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            }
+          console.log("Removing favorite with ID:", favoriteId); // Debug log
+          if (confirm("Are you sure you want to remove this restaurant from your favorites?")) {
+            fetch(`/remove_favorite/${favoriteId}/`, {
+              method: 'DELETE',
+              headers: {
+                'X-CSRFToken': csrfToken,
+              },
+            })
+            .then(response => {
+              if (response.ok) {
+                alert("Restaurant removed from favorites.");
+                location.reload(); // Or redirect to favorites page if desired
+              } else {
+                alert("Failed to remove the restaurant from favorites.");
+                console.error("Response status:", response.status); // Log the status
+              }
+            })
+            .catch(error => {
+              console.error('Error:', error);
+            });
+          }
         }
 
 
