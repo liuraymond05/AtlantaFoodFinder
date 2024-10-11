@@ -76,9 +76,9 @@
         </select>
         <label for="maxDistance">Max Distance (in km):</label>
         <select id="maxDistance">
-            <option value="5000">5 km</option>
-            <option value="10000">10 km</option>
-            <option value="15000">15 km</option>
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="15">15 km</option>
         </select>
         <button type="button" onclick="performSearch()">Search</button>
     </form>
@@ -87,16 +87,15 @@
         <div id="map"></div>
     </div>
 
-
     <script>
-        let map, allMarkers = [], userLocation = null, service, infowindow, autocomplete;
+        let map, allMarkers = [], userLocation = null, service, infowindow;
 
         // Common cuisines to check against
         const cuisines = ["Chinese", "Italian", "Mexican", "Indian", "Japanese", "Thai", "American", "Mediterranean", "Asian", "Breakfast"];
         const csrftoken = '{{ csrf_token }}';
 
         function initMap() {
-            const location = { lat: 33.749, lng: -84.388 }; // Default to Atlanta coordinates
+            const location = { lat: 33.749, lng: -84.388 };  // Default center in Atlanta
             map = new google.maps.Map(document.getElementById('map'), {
                 center: location,
                 zoom: 12,
@@ -105,28 +104,19 @@
 
             service = new google.maps.places.PlacesService(map);
             infowindow = new google.maps.InfoWindow();
-            autocomplete = new google.maps.places.Autocomplete(document.getElementById('searchName'));
-            autocomplete.bindTo('bounds', map);
-            loadRestaurantsNearby(location);    
-
-            // Handle place change for autocomplete
-            autocomplete.addListener('place_changed', () => {
-                const place = autocomplete.getPlace();
-                if (!place.geometry) {
-                    alert("No details available for input: '" + place.name + "'");
-                    return;
-                }
-                map.setCenter(place.geometry.location);
-                map.setZoom(15);
-                clearMarkers();
-                createMarker(place);
-            });
+             // Automatically call getUserLocation when the map is loaded
+            getUserLocation();
         }
 
         function getUserLocation() {
-            document.getElementById('locationMessage').style.display = 'block'; // Show the locating message
+            const locationMessage = document.getElementById('locationMessage');
+            locationMessage.style.display = 'block';
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(success, error);
+                navigator.geolocation.getCurrentPosition(success, error, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
             } else {
                 alert("Geolocation is not supported by this browser.");
             }
@@ -137,36 +127,34 @@
                 lat: position.coords.latitude,
                 lng: position.coords.longitude
             };
-            map.setCenter(userLocation); // Pan to user's location
-            map.setZoom(14); // Zoom closer to user's location
-            loadRestaurantsNearby(userLocation); // Load all restaurants around user
-            document.getElementById('locationMessage').style.display = 'none'; // Hide the locating message
+            map.setCenter(userLocation);
+            map.setZoom(14);
+            document.getElementById('locationMessage').style.display = 'none'; // Hide the message once location is fetched
+            loadRestaurantsNearby(userLocation);
         }
 
         function error() {
-            alert("Unable to retrieve your location.");
-            document.getElementById('locationMessage').style.display = 'none'; // Hide the locating message
+            alert("Unable to retrieve your location. Please allow location access for best results.");
+            document.getElementById('locationMessage').style.display = 'none';
         }
 
         function loadRestaurantsNearby(location) {
+            const maxDistance = parseFloat(document.getElementById('maxDistance').value) * 1000; // Convert km to meters
             const request = {
                 location: location,
-                radius: 15000, // Set a radius to get more restaurants
-                types: ['restaurant', 'cafe', 'food', 'fast_food']
+                radius: maxDistance,
+                type: 'restaurant'
             };
             service.nearbySearch(request, handleNearbyResults);
         }
 
-        function handleNearbyResults(results, status, pagination) {
+        function handleNearbyResults(results, status) {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
-                results.forEach(createMarker);
-                if (pagination && pagination.hasNextPage) {
-                // Automatically load the next page after a small delay
-                    setTimeout(() => {
-                        pagination.nextPage();
-                    }, 200);
-                } 
-                map.setZoom(12); // Adjust zoom level after loading nearby restaurants
+                clearMarkers();
+                results.forEach(place => {
+                    createMarker(place);
+                });
+                map.setZoom(12);
             } else {
                 alert("Error fetching restaurant data: " + status);
             }
@@ -175,7 +163,7 @@
         function performSearch() {
             const query = document.getElementById('searchName').value;
             const minRating = parseFloat(document.getElementById('minRating').value);
-            const maxDistance = parseFloat(document.getElementById('maxDistance').value); // Already in meters
+            const maxDistance = parseFloat(document.getElementById('maxDistance').value) * 1000; // Convert km to meters
 
             if (!query) {
                 alert("Please enter a search query.");
@@ -188,39 +176,36 @@
                 radius: maxDistance,
             };
 
-            clearMarkers(); // Clear previous markers
-            service.textSearch(request, (results, status) => handleSearchResults(results, status, minRating, query));
-
-            // Load nearby restaurants regardless of the search query, if maxDistance is increased
-            if (maxDistance > 5000) {
-                loadRestaurantsNearby(userLocation); // Load restaurants nearby
-            }
+            clearMarkers();
+            service.textSearch(request, (results, status) => handleSearchResults(results, status, minRating, maxDistance));
         }
 
-        function handleSearchResults(results, status, minRating, query) {
+        function handleSearchResults(results, status, minRating, maxDistance) {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
-                const bounds = new google.maps.LatLngBounds(); // Create bounds for zooming out
+                const bounds = new google.maps.LatLngBounds();
                 results.forEach(place => {
-                    if (place.types.includes('restaurant') && (!place.rating || place.rating >= minRating)) {
-                        const cuisineType = guessCuisineType(place.name, query);
-                        createMarker(place, cuisineType); // Pass cuisine type to createMarker
-                        bounds.extend(place.geometry.location); // Extend bounds to include this location
+                    if (place.rating >= minRating && place.geometry.location) {
+                        const distance = google.maps.geometry.spherical.computeDistanceBetween(userLocation, place.geometry.location); // Calculate distance
+                        if (distance <= maxDistance) {
+                            const cuisineType = guessCuisineType(place.name);
+                            createMarker(place, cuisineType);
+                            bounds.extend(place.geometry.location);
+                        }
                     }
                 });
-                map.fitBounds(bounds); // Adjust map to show all markers
+                map.fitBounds(bounds);
             } else {
                 alert("No results found.");
             }
         }
 
-        function guessCuisineType(restaurantName, searchQuery) {
-            // Check if the search query matches any common cuisine
+        function guessCuisineType(restaurantName) {
             for (const cuisine of cuisines) {
-                if (restaurantName.toLowerCase().includes(cuisine.toLowerCase()) || searchQuery.toLowerCase().includes(cuisine.toLowerCase())) {
-                    return cuisine; // Return the matched cuisine type
+                if (restaurantName.toLowerCase().includes(cuisine.toLowerCase())) {
+                    return cuisine;
                 }
             }
-            return "Not Specified"; // Default if no match found
+            return "Not Specified";
         }
 
         function clearMarkers() {
@@ -243,41 +228,9 @@
             google.maps.event.addListener(marker, 'click', () => {
                 service.getDetails({ placeId: place.place_id }, (details, status) => {
                     if (status === google.maps.places.PlacesServiceStatus.OK) {
-                        const content = generateInfoWindowContent(details, cuisineType, place);
+                        const content = generateInfoWindowContent(details, cuisineType);
                         infowindow.setContent(content);
                         infowindow.open(map, marker);
-
-                        // Add event listener here after content is set
-                        const addToFavoritesButton = document.getElementById('addToFavoritesButton');
-                        addToFavoritesButton.addEventListener('click', async function() {
-                            const restaurantId = this.getAttribute('data-restaurant-id');
-                            const csrftoken = '{{ csrf_token }}'; // CSRF token
-
-                            try {
-                                const response = await fetch('/restaurants/add_to_favorites/', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-CSRFToken': csrftoken,
-                                    },
-                                    body: JSON.stringify({ restaurant_id: restaurantId }),
-                                });
-
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok');
-                                }
-
-                                const result = await response.json();
-                                if (result.status === 'success') {
-                                    alert('Added to favorites!');
-                                } else {
-                                    alert(result.message);
-                                }
-                            } catch (error) {
-                                console.error('Error adding to favorites:', error);
-                                alert('Failed to add to favorites. Please try again.');
-                            }
-                        });
                     }
                 });
             });
@@ -285,25 +238,26 @@
 
 
 
-        function generateInfoWindowContent(details, cuisineType, place) {
+        function generateInfoWindowContent(details, cuisineType) {
+            const ratingStars = details.rating ? `<span class="star">${details.rating.toFixed(1)}</span>` : 'No rating available';
+            const reviews = details.reviews ? details.reviews.map(review => `
+                <p>${review.text}</p>
+            `).join('') : 'No reviews available';
+
             return `
                 <div>
-                    <h3>${details.name}</h3>
-                    <p>Rating: ${details.rating || 'N/A'}</p>
-                    <p>Address: ${details.formatted_address}</p>
-                    <p>Phone: ${details.formatted_phone_number || 'N/A'}</p>
-                    <h4>Cuisine Type:</h4>
-                    <p>${cuisineType}</p>
-                    <h4>Reviews:</h4>
-                    <div class="reviews">${formatReviews(details.reviews)}</div>
-
+                    <strong>${details.name}</strong><br>
+                    Phone: ${details.formatted_phone_number || 'N/A'}<br>
+                    Cuisine: ${cuisineType}<br>
+                    Rating: <span class="star">${details.rating ? details.rating.toFixed(1) : 'N/A'}</span><br>
+                    ${reviews}
                     <button id="addToFavoritesButton"
-                        data-restaurant-id="${place.place_id}"
-                        data-restaurant-name="${details.name}"
-                        data-cuisine-type="${cuisineType}"
-                        data-address="${details.formatted_address}">
-                    Add to Favorites
-                </button>
+                            data-restaurant-id="${details.place_id}"
+                            data-restaurant-name="${details.name}"
+                            data-cuisine="${cuisineType}"
+                            data-rating="${details.rating || 'N/A'}">
+                        Add to Favorites
+                    </button>
                 </div>
             `;
         }
@@ -345,11 +299,12 @@
         }
 
 
-        function addToFavorites(placeId, restaurantName, cuisineType) {
+        function addToFavorites(placeId, name, cuisine, rating) {
             const data = {
                 restaurant_id: placeId,
-                restaurant_name: restaurantName,
-                cuisine_type: cuisineType
+                restaurant_name: name,
+                cuisine_type: cuisine,
+                rating: rating // Include rating if you want to save it as well
             };
 
             fetch('/add_to_favorites/', {
@@ -364,11 +319,23 @@
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
+                    updateFavoritesPage({restaurant_name: name, cuisine_type: cuisine, rating: rating}); // Pass details to update
                 } else {
                     alert(data.message);
                 }
             })
             .catch(error => console.error('Error:', error));
+        }
+
+        function updateFavoritesPage(favoriteDetails) {
+            const favoritesContainer = document.getElementById('favorites-container'); // Ensure this matches your HTML
+            const favoriteItem = document.createElement('li');
+            favoriteItem.innerHTML = `
+                <strong>${favoriteDetails.restaurant_name}</strong><br>
+                Cuisine: ${favoriteDetails.cuisine_type}<br>
+                Rating: ${favoriteDetails.rating}
+            `;
+            favoritesContainer.appendChild(favoriteItem);
         }
 
 
@@ -442,6 +409,6 @@
 
     </script>
 
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places&callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places,geometry&callback=initMap"></script>
 </body>
 </html>

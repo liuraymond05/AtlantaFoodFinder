@@ -101,62 +101,52 @@ def register_view(request):
 @login_required
 @require_POST
 def add_to_favorites(request):
-   print("Received request to add to favorites")
+    print("Received request to add to favorites")
 
-   if request.method == 'POST':
-       user = request.user
-       print(f"Request method: {request.method}")
-       print(f"User authenticated: {user.is_authenticated}")
+    user = request.user
+    print(f"Request method: {request.method}")
+    print(f"User authenticated: {user.is_authenticated}")
 
+    if user.is_authenticated:
+        data = json.loads(request.body)
+        print(f"Request body data: {data}")
 
-       if user.is_authenticated:
-           data = json.loads(request.body)
-           print(f"Request body data: {data}")
+        restaurant_id = data.get('restaurant_id')
+        restaurant_name = data.get('restaurant_name', restaurant_id)
+        cuisine_type = data.get('cuisine_type', 'General')
+        address = data.get('address', 'No address provided')
 
+        print(f"Restaurant ID: {restaurant_id}")
+        print(f"Restaurant Name: {restaurant_name}")
+        print(f"Cuisine Type: {cuisine_type}")
+        print(f"Address: {address}")
 
-           restaurant_id = data.get('restaurant_id')
-           restaurant_name = data.get('restaurant_name', restaurant_id)
-           cuisine_type = data.get('cuisine_type', 'General')
-           address = data.get('address', 'No address provided')
+        # Try to get the restaurant
+        restaurant = Restaurant.objects.filter(place_id=restaurant_id).first()
 
+        if restaurant is None:
+            # Create new restaurant if not found
+            restaurant = Restaurant.objects.create(
+                place_id=restaurant_id,
+                name=restaurant_name,
+                cuisine_type=cuisine_type,
+                address=address,
+            )
+            print(f"Created new restaurant: {restaurant}")
 
-           print(f"Restaurant ID: {restaurant_id}")
-           print(f"Restaurant Name: {restaurant_name}")
-           print(f"Cuisine Type: {cuisine_type}")
-           print(f"Address: {address}")
+        # Check if it's already in the user's favorites
+        if not Favorite.objects.filter(user=user, restaurant=restaurant).exists():
+            Favorite.objects.create(user=user, restaurant=restaurant)
+            print(f"Added {restaurant.name} to favorites for user {user.username}.")
+            return JsonResponse({'status': 'success', 'message': 'Restaurant added to favorites'})
+        else:
+            print(f"{restaurant.name} is already in favorites for user {user.username}.")
+            return JsonResponse({'status': 'error', 'message': 'Already in favorites'})
 
-
-           # Try to get the restaurant
-           try:
-               restaurant = Restaurant.objects.get(place_id=restaurant_id)
-               print(f"Restaurant found: {restaurant}")
-           except Restaurant.DoesNotExist:
-               print(f"Restaurant with place_id {restaurant_id} does not exist. Creating new restaurant.")
-               restaurant = Restaurant.objects.create(
-                   place_id=restaurant_id,
-                   name=restaurant_name,
-                   cuisine_type=cuisine_type,
-                   address=address,
-               )
-               print(f"Created new restaurant: {restaurant}")
-
-
-           # Check if it's already in the user's favorites
-           if not Favorite.objects.filter(user=user, restaurant=restaurant).exists():
-               Favorite.objects.create(user=user, restaurant=restaurant)
-               print(f"Added {restaurant.name} to favorites for user {user.username}.")
-               return JsonResponse({'status': 'success', 'message': 'Restaurant added to favorites'})
-           else:
-               print(f"{restaurant.name} is already in favorites for user {user.username}.")
-               return JsonResponse({'status': 'error', 'message': 'Already in favorites'})
+    print("User not authenticated")
+    return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
 
 
-       print("User not authenticated")
-       return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
-
-
-   print("Invalid request method")
-   return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
 # Remove a restaurant from favorites
 @login_required
