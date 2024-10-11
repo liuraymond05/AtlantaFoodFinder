@@ -7,6 +7,34 @@
     <title>Food Finder</title>
     <link rel="stylesheet" href="{% static 'restaurants/style.css' %}">
     <style>
+    .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+    .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px;
+        }
         #map {
             height: 500px;
             width: 100%;
@@ -62,6 +90,14 @@
 
     <button onclick="getUserLocation()">Find My Location</button>
     <a href="{% url 'home' %}" class="return-homepage">Return to Homepage</a>
+    <div id="locationModal" class="modal">
+        <div class="modal-content">
+            <h2>Allow Location Access</h2>
+            <p>We need your location to show nearby restaurants.</p>
+            <button onclick="allowLocation()">Allow</button>
+            <button onclick="denyLocation()">Deny</button>
+        </div>
+    </div>
 
     <div id="locationMessage">Locating food near you...</div>
 
@@ -105,7 +141,21 @@
 
             // Automatically call getUserLocation when the map is loaded
             getUserLocation();
+
         }
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('locationModal').style.display = 'block';
+        });
+        function allowLocation() {
+            document.getElementById('locationModal').style.display = 'none';
+            getUserLocation();
+        }
+        function denyLocation() {
+            document.getElementById('locationModal').style.display = 'none';
+            alert("Location access was denied. You can still search for restaurants manually!");
+        }
+
+        
 
         function getUserLocation() {
             const locationMessage = document.getElementById('locationMessage');
