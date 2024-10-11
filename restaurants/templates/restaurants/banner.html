@@ -3,10 +3,23 @@
 <link rel="stylesheet" href="{% static 'restaurants/style.css' %}?v=1.0">
 <div class="banner">
     <div class="profile">
-        <img src="{% static 'restaurants/images/profile-pic.png' %}" alt="Profile" class="profile-pic">
+        <img src="{% static 'restaurants/magnifying.jpeg' %}" alt="Profile" class="profile-pic">
         <div class="favorites-dropdown">
-            <a href="{% url 'favorite' %}" class="favorites-link">Favorites</a>
+            {% if request.resolver_match.url_name == 'favorite' %}
+                <!-- If on the favorites page, show a back button -->
+                <button onclick= "goBack()" class="back-button">Back</button>
+            {% else %}
+                <!-- If not on the favorites page, show the favorites link -->
+                <a href="{% url 'favorite' %}" class="favorites-link">Favorites</a>
+                <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+    function goBack() {
+        window.history.back();
+    }
+</script>
 

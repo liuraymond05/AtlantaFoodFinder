@@ -1,25 +1,26 @@
-from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages, auth
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
+from django.contrib.auth.models import User
 from django.views.generic import TemplateView
-from .models import Restaurant, Favorite
-from .forms import CustomUserForm, PasswordResetCustomForm
+from .models import Restaurant, Favorite, Review
+from .forms import CustomUserForm, ReviewForm, PasswordResetCustomForm
 from django.contrib.auth import update_session_auth_hash
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.forms import PasswordChangeForm
 import json
 import requests
+from django.template.loader import get_template
+from django.template import TemplateDoesNotExist
+
 
 # View to render the map and restaurant markers
 def map_view(request):
-    restaurants = Restaurant.objects.all()
-    restaurants_data = json.dumps(
-        list(restaurants.values('name', 'latitude', 'longitude', 'address'))
-    )
-    return render(request, 'restaurants/map.html', {'restaurants_data': restaurants_data})
+    return render(request, 'restaurants/map.html')
+
 
 # View to handle restaurant search based on user input
 def food_finder(request):
@@ -35,7 +36,7 @@ def food_finder(request):
             'radius': float(max_distance) * 1609.34,
             'type': 'restaurant',
             'keyword': query,
-            'key': 'YOUR_GOOGLE_API_KEY'  # Replace with your actual Google API key
+            'key': 'AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs'  # Replace with your actual Google API key
         }
         response = requests.get(places_url, params=params)
         results = response.json().get('results', [])
@@ -57,6 +58,7 @@ def food_finder(request):
 
     return render(request, 'restaurants/search_results.html')
 
+
 # Handle user login
 def login_view(request):
     if request.method == 'POST':
@@ -70,6 +72,7 @@ def login_view(request):
             messages.error(request, 'Invalid username or password. Please try again.')
     return render(request, 'restaurants/login.html')
 
+
 # Handle user logout
 def logout_view(request):
     if request.method == 'POST':
@@ -77,6 +80,7 @@ def logout_view(request):
         messages.info(request, 'You have successfully logged out!')
         return redirect('login')
     return render(request, 'restaurants/logout.html')
+
 
 # Handle user registration
 def register_view(request):
@@ -92,45 +96,156 @@ def register_view(request):
         messages.error(request, 'Please complete the entire form.')
     return render(request, 'restaurants/register.html', {'form': form})
 
+
 # Add a restaurant to favorites
 @login_required
 @require_POST
 def add_to_favorites(request):
-    data = json.loads(request.body)
-    place_id = data.get('place_id')
-    name = data.get('name')
+    print("Received request to add to favorites")
 
-    restaurant, created = Restaurant.objects.get_or_create(
-        place_id=place_id,
-        defaults={'name': name}
-    )
+    user = request.user
+    print(f"Request method: {request.method}")
+    print(f"User authenticated: {user.is_authenticated}")
 
-    # Add to user's favorites
-    favorite, created = Favorite.objects.get_or_create(
-        user=request.user,
-        restaurant=restaurant
-    )
+    if user.is_authenticated:
+        data = json.loads(request.body)
+        print(f"Request body data: {data}")
 
-    if created:
-        return JsonResponse({'message': 'Added to favorites!'})
-    else:
-        return JsonResponse({'error': 'Restaurant is already in your favorites.'}, status=400)
+        restaurant_id = data.get('restaurant_id')
+        restaurant_name = data.get('restaurant_name', restaurant_id)
+        cuisine_type = data.get('cuisine_type', 'General')
+        address = data.get('address', 'No address provided')
+
+        print(f"Restaurant ID: {restaurant_id}")
+        print(f"Restaurant Name: {restaurant_name}")
+        print(f"Cuisine Type: {cuisine_type}")
+        print(f"Address: {address}")
+
+        # Try to get the restaurant
+        restaurant = Restaurant.objects.filter(place_id=restaurant_id).first()
+
+        if restaurant is None:
+            # Create new restaurant if not found
+            restaurant = Restaurant.objects.create(
+                place_id=restaurant_id,
+                name=restaurant_name,
+                cuisine_type=cuisine_type,
+                address=address,
+            )
+            print(f"Created new restaurant: {restaurant}")
+
+        # Check if it's already in the user's favorites
+        if not Favorite.objects.filter(user=user, restaurant=restaurant).exists():
+            Favorite.objects.create(user=user, restaurant=restaurant)
+            print(f"Added {restaurant.name} to favorites for user {user.username}.")
+            return JsonResponse({'status': 'success', 'message': 'Restaurant added to favorites'})
+        else:
+            print(f"{restaurant.name} is already in favorites for user {user.username}.")
+            return JsonResponse({'status': 'error', 'message': 'Already in favorites'})
+
+    print("User not authenticated")
+    return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
+
+
 
 # Remove a restaurant from favorites
 @login_required
-def remove_favorite(request, place_id):
-    restaurant = get_object_or_404(Restaurant, place_id=place_id)
-    Favorite.objects.filter(user=request.user, restaurant=restaurant).delete()
-    return redirect('favorites')
+def remove_favorite(request, favorite_id):
+    favorite = get_object_or_404(Favorite, id=favorite_id, user=request.user)
+    favorite.delete()  # Remove the favorite
+    messages.success(request, 'Favorite removed successfully.')  # Feedback message
+    return redirect('favorites')  # Redirect to the favorites page
 
-# View user's favorites
 @login_required
 def favorites_view(request):
-    favorites = Favorite.objects.filter(user=request.user).select_related('restaurant')
-    return render(request, 'restaurants/favorites.html', {'favorites': favorites})
+    if request.user.is_authenticated:
+        favorites = request.user.favorites.all()  # Accessing favorites through related_name
+        if not favorites.exists():
+            messages.info(request, 'You have no favorites yet.')  # Feedback message if no favorites
+        return render(request, 'restaurants/favorites.html', {'favorites': favorites})
+    else:
+        return redirect('login')  # or whatever your login view is
+
 
 class HomeView(TemplateView):
     template_name = 'restaurants/index.html'  # Ensure this path is correct
+
+
+def edit_review(request, review_id):
+    review = get_object_or_404(Review, pk=review_id)
+
+    if request.user != review.user:
+        return redirect('restaurant_detail', restaurant_id=review.restaurant.id)
+
+    if request.method == 'POST':
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            form.save()
+            return redirect('restaurant_detail', restaurant_id=review.restaurant.id)
+    else:
+        form = ReviewForm(instance=review)
+
+    return render(request, 'edit_review.html', {'form': form, 'review': review})
+
+
+def delete_review(request, review_id):
+    if request.method == 'DELETE':
+        if request.user.is_authenticated:
+            review = get_object_or_404(Review, id=review_id, user=request.user)
+            review.delete()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'message': 'User not authenticated.'})
+    return JsonResponse({'success': False, 'message': 'Invalid request.'})
+
+def add_review(request, place_id):
+    if request.method == 'POST':
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            rating = data.get('rating')
+            review_text = data.get('reviewText')
+
+            # Create the new review instance (assuming you have a Review model)
+            review = Review.objects.create(
+                user=request.user,
+                place_id=place_id,
+                rating=rating,
+                review_text=review_text,
+            )
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'message': 'User not authenticated.'})
+    return JsonResponse({'success': False, 'message': 'Invalid request.'})
+
+def submit_review(request, place_id):
+    if request.method == 'POST':
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            rating = data.get('rating')
+            review_text = data.get('reviewText')
+
+            # Here you can create a Review linked to the restaurant identified by place_id
+            review = Review.objects.create(
+                restaurant_id=place_id,  # Modify this as needed
+                user=request.user,
+                rating=rating,
+                review_text=review_text
+            )
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'message': 'User not authenticated.'})
+    return JsonResponse({'success': False, 'message': 'Invalid request.'})
+
+def get_reviews(request, review_id):
+    review = get_object_or_404(Review, id=review_id)
+    return JsonResponse({
+        'success': True,
+        'review': {
+            'rating': review.rating,
+            'review_text': review.review_text,
+        }
+    })
+
 
 @login_required
 def change_password_view(request):
@@ -146,6 +261,7 @@ def change_password_view(request):
     else:
         form = PasswordChangeForm(request.user)
     return render(request, 'restaurants/reset.html', {"form": form})
+
 
 def reset_password_view(request):
     if request.method == 'POST':
@@ -165,3 +281,16 @@ def reset_password_view(request):
     else:
         form = PasswordResetCustomForm()
     return render(request, 'restaurants/reset.html', {"form": form})
+
+def update_review(request, review_id):
+    if request.method == 'POST':
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            review = get_object_or_404(Review, id=review_id, user=request.user)
+            review.rating = data.get('rating')
+            review.review_text = data.get('reviewText')
+            review.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'message': 'User not authenticated.'})
+    return JsonResponse({'success': False, 'message': 'Invalid request.'})

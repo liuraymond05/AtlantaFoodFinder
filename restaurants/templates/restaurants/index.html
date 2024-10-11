@@ -11,7 +11,9 @@
 <body>
     <header>
         {% include 'restaurants/banner.html' %}
-        <h1>Atlanta Food Finder</h1>
+        <div class="header-container1">
+            <img src="{% static 'restaurants/AFFtt.png' %}" alt="AFF" class="logo">
+        </div>
         <nav>
             <ul>
                 <li><a href="{% url 'login' %}" id="loginLink">User Login</a></li>
@@ -31,12 +33,25 @@
 
         <section class="features">
             <h3>Features</h3>
-            <ul>
-                <li>Filter by Cuisine Type</li>
-                <li>Sort by Ratings</li>
-                <li>Find Nearby Locations</li>
-                <li>User Reviews and Recommendations</li>
-            </ul>
+            <div class="features-container">
+                <div class="feature-item">
+                    <img src="{% static 'restaurants/cuisine.PNG' %}" alt="cuisine type" class="feature-icon">
+                    <p>Filter by Cuisine Type</p>
+                </div>
+                <div class="feature-item">
+                    <img src="{% static 'restaurants/rating.PNG' %}" alt="rating type" class="feature-icon">
+                    <p>Sort by Ratings</p>
+                </div>
+                <div class="feature-item">
+                    <img src="{% static 'restaurants/location.PNG' %}" alt="location type" class="feature-icon">
+                    <p>Find Nearby Locations</p>
+                </div>
+                <div class="feature-item">
+                    <img src="{% static 'restaurants/suggest.PNG' %}" alt="suggest type" class="feature-icon">
+                    <p>User Reviews and Recommendations</p>
+                </div>
+            </div>
+
         </section>
     </main>
 
@@ -44,6 +59,5 @@
         <p>&copy; 2024 Atlanta Food Finder. All rights reserved.</p>
     </footer>
 
-    <script src="{% static 'restaurants/script.js' %}"></script>
 </body>
 </html>

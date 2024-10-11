@@ -1,6 +1,7 @@
 from django.urls import include, path
 from . import views
-from .views import HomeView
+from .views import HomeView, add_to_favorites, remove_favorite
+
 
 urlpatterns = [
     path('', HomeView.as_view(), name='home'),
@@ -10,9 +11,10 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('register/', views.register_view, name='register'),
     path('favorites/', views.favorites_view, name='favorite'),
-    path('add_to_favorites/', views.add_to_favorites, name='add_to_favorites'),  # Add favorite via POST
-    path('remove_favorite/<str:place_id>/', views.remove_favorite, name='remove_favorite'),
-    path ('change/', views.change_password_view, name='change'),
+    #path('add_to_favorites/', add_to_favorites, name='add_to_favorites'),
+    path('add_to_favorites/', views.add_to_favorites, name='add_to_favorites'),
+    path('remove_favorite/<int:favorite_id>/', views.remove_favorite, name='remove_favorite'),
+    path('restaurant/<str:place_id>/add_review/', views.add_review, name='add_review'),
+    path('change/', views.change_password_view, name='change'),
     path('reset/', views.reset_password_view, name='reset'),
-
 ]
