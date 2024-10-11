@@ -7,6 +7,34 @@
     <title>Food Finder</title>
     <link rel="stylesheet" href="{% static 'restaurants/style.css' %}">
     <style>
+    .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+    .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px;
+        }
         #map {
             height: 500px;
             width: 100%;
@@ -41,12 +69,12 @@
         }
         .review-header {
             display: flex;
-            align-items: center; /* Align items vertically centered */
+            align-items: center;
         }
         .star {
-            color: black; /* Change star color to black */
-            font-size: 16px; /* Adjust size as needed */
-            margin-left: 5px; /* Add space between name and stars */
+            color: black; /* Black stars for ratings */
+            font-size: 16px;
+            margin-left: 5px;
         }
     </style>
 </head>
@@ -62,6 +90,14 @@
 
     <button onclick="getUserLocation()">Find My Location</button>
     <a href="{% url 'home' %}" class="return-homepage">Return to Homepage</a>
+    <div id="locationModal" class="modal">
+        <div class="modal-content">
+            <h2>Allow Location Access</h2>
+            <p>We need your location to show nearby restaurants.</p>
+            <button onclick="allowLocation()">Allow</button>
+            <button onclick="denyLocation()">Deny</button>
+        </div>
+    </div>
 
     <div id="locationMessage">Locating food near you...</div>
 
@@ -90,7 +126,6 @@
     <script>
         let map, allMarkers = [], userLocation = null, service, infowindow;
 
-        // Common cuisines to check against
         const cuisines = ["Chinese", "Italian", "Mexican", "Indian", "Japanese", "Thai", "American", "Mediterranean", "Asian", "Breakfast"];
         const csrftoken = '{{ csrf_token }}';
 
@@ -104,9 +139,22 @@
 
             service = new google.maps.places.PlacesService(map);
             infowindow = new google.maps.InfoWindow();
-             // Automatically call getUserLocation when the map is loaded
+            getUserLocation();
+
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('locationModal').style.display = 'block';
+        });
+        function allowLocation() {
+            document.getElementById('locationModal').style.display = 'none';
             getUserLocation();
         }
+        function denyLocation() {
+            document.getElementById('locationModal').style.display = 'none';
+            alert("Location access was denied. You can still search for restaurants manually!");
+        }
+
+        
 
         function getUserLocation() {
             const locationMessage = document.getElementById('locationMessage');
@@ -235,7 +283,6 @@
                 });
             });
         }
-
 
 
         function generateInfoWindowContent(details, cuisineType) {
@@ -381,6 +428,10 @@
         function formatReviews(reviews) {
             if (!reviews) return '<p>No reviews available.</p>';
             return reviews.map(review => `
+=======
+        function generateInfoWindowContent(details, cuisineType) {
+            const ratingStars = details.rating ? `<span class="star">${details.rating.toFixed(1)}</span>` : 'No rating available';
+            const reviews = details.reviews ? details.reviews.map(review => `
                 <div class="review">
                     <div class="review-header">
                         <strong>${review.author_name}</strong>
@@ -388,9 +439,7 @@
                     </div>
                     <p>${review.text}</p>
                 </div>
-            `).join('');
-        }
-
+            `).join('') : 'No reviews available';
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -405,10 +454,25 @@
                 }
             }
             return cookieValue;
+
+            return `
+                <div>
+                    <strong>${details.name}</strong><br>
+                    Phone: ${details.formatted_phone_number || 'N/A'}<br>
+                    Cuisine: ${cuisineType}<br>
+                    Rating: <span class="star">${details.rating ? details.rating.toFixed(1) : 'N/A'}</span><br>
+                    ${reviews}
+                    <button onclick="addToFavorites('${details.place_id}', '${details.name}', '${cuisineType}', '${details.rating || 'N/A'}')">Add to Favorites</button>
+                </div>
+            `;
+        }
+
+        function addToFavorites(placeId, name, cuisine, rating) {
+            // Implement the logic to add to favorites (e.g., AJAX request to your server)
+            alert(`Added ${name} to favorites!`);
         }
 
     </script>
-
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places,geometry&callback=initMap"></script>
 </body>
 </html>
