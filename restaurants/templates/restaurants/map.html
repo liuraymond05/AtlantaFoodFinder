@@ -288,6 +288,11 @@
         function generateInfoWindowContent(details, cuisineType) {
             const ratingStars = details.rating ? `<span class="star">${details.rating.toFixed(1)}</span>` : 'No rating available';
             const reviews = details.reviews ? details.reviews.map(review => `
+                <div class="review">
+                    <div class="review-header">
+                        <strong>${review.author_name}</strong>
+                        <span class="star">${'★'.repeat(review.rating)}</span>
+                    </div>
                 <p>${review.text}</p>
             `).join('') : 'No reviews available';
 
