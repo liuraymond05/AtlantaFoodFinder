@@ -127,6 +127,7 @@
         let map, allMarkers = [], userLocation = null, service, infowindow;
 
         const cuisines = ["Chinese", "Italian", "Mexican", "Indian", "Japanese", "Thai", "American", "Mediterranean", "Asian", "Breakfast"];
+        const csrftoken = '{{ csrf_token }}';
 
         function initMap() {
             const location = { lat: 33.749, lng: -84.388 };  // Default center in Atlanta
@@ -138,8 +139,6 @@
 
             service = new google.maps.places.PlacesService(map);
             infowindow = new google.maps.InfoWindow();
-
-            // Automatically call getUserLocation when the map is loaded
             getUserLocation();
 
         }
@@ -160,7 +159,6 @@
         function getUserLocation() {
             const locationMessage = document.getElementById('locationMessage');
             locationMessage.style.display = 'block';
-
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(success, error, {
                     enableHighAccuracy: true,
@@ -180,7 +178,6 @@
             map.setCenter(userLocation);
             map.setZoom(14);
             document.getElementById('locationMessage').style.display = 'none'; // Hide the message once location is fetched
-
             loadRestaurantsNearby(userLocation);
         }
 
@@ -264,6 +261,9 @@
             allMarkers = [];
         }
 
+        console.log("CSRF Token:", csrftoken);
+
+
         function createMarker(place, cuisineType) {
             const marker = new google.maps.Marker({
                 map: map,
@@ -284,6 +284,151 @@
             });
         }
 
+
+        function generateInfoWindowContent(details, cuisineType) {
+            const ratingStars = details.rating ? `<span class="star">${details.rating.toFixed(1)}</span>` : 'No rating available';
+            const reviews = details.reviews ? details.reviews.map(review => `
+                <p>${review.text}</p>
+            `).join('') : 'No reviews available';
+
+            return `
+                <div>
+                    <strong>${details.name}</strong><br>
+                    Phone: ${details.formatted_phone_number || 'N/A'}<br>
+                    Cuisine: ${cuisineType}<br>
+                    Rating: <span class="star">${details.rating ? details.rating.toFixed(1) : 'N/A'}</span><br>
+                    ${reviews}
+                    <button id="addToFavoritesButton"
+                            data-restaurant-id="${details.place_id}"
+                            data-restaurant-name="${details.name}"
+                            data-cuisine="${cuisineType}"
+                            data-rating="${details.rating || 'N/A'}">
+                        Add to Favorites
+                    </button>
+                </div>
+            `;
+        }
+
+        function fetchAndDisplayRestaurants(results) {
+            const resultsContainer = document.getElementById('results-container'); // Adjust this to your actual container ID
+            resultsContainer.innerHTML = ''; // Clear previous results
+
+            results.forEach(place => {
+                const li = document.createElement('li');
+                li.className = 'result-item';
+                li.innerHTML = `
+                    <h3>${place.name}</h3>
+                    <p>Rating: ${place.rating || 'N/A'} (${place.user_ratings_total || 0} reviews)</p>
+                    <p>Address: ${place.formatted_address || 'N/A'}</p>
+                    <p>Cuisine: ${place.types?.join(', ') || 'N/A'}</p>
+                    <button class="add-to-favorites"
+                            data-id="${place.place_id}"
+                            data-name="${place.name}"
+                            data-cuisine="${place.types?.join(', ') || 'N/A'}">
+                        Add to Favorites
+                    </button>
+                `;
+                resultsContainer.appendChild(li);
+            });
+
+            // Add event listener for "Add to Favorites" buttons
+            resultsContainer.addEventListener('click', function(event) {
+                if (event.target.classList.contains('add-to-favorites')) {
+                    const button = event.target;
+                    const placeId = button.getAttribute('data-id');
+                    const restaurantName = button.getAttribute('data-name');
+                    const cuisineType = button.getAttribute('data-cuisine');
+
+                    // Call the addToFavorites function with the retrieved data
+                    addToFavorites(placeId, restaurantName, cuisineType);
+                }
+            });
+        }
+
+
+        function addToFavorites(placeId, name, cuisine, rating) {
+            const data = {
+                restaurant_id: placeId,
+                restaurant_name: name,
+                cuisine_type: cuisine,
+                rating: rating // Include rating if you want to save it as well
+            };
+
+            fetch('/add_to_favorites/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')  // Include CSRF token for security
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    updateFavoritesPage({restaurant_name: name, cuisine_type: cuisine, rating: rating}); // Pass details to update
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function updateFavoritesPage(favoriteDetails) {
+            const favoritesContainer = document.getElementById('favorites-container'); // Ensure this matches your HTML
+            const favoriteItem = document.createElement('li');
+            favoriteItem.innerHTML = `
+                <strong>${favoriteDetails.restaurant_name}</strong><br>
+                Cuisine: ${favoriteDetails.cuisine_type}<br>
+                Rating: ${favoriteDetails.rating}
+            `;
+            favoritesContainer.appendChild(favoriteItem);
+        }
+
+
+        // Event delegation to handle 'Add to Favorites' button clicks for dynamically created buttons
+        document.addEventListener('click', async function(event) {
+            if (event.target && event.target.id === 'addToFavoritesButton') {
+                console.log("Add to Favorites button clicked"); // Log button click
+                const restaurantId = event.target.getAttribute('data-restaurant-id');
+                const csrftoken = '{{ csrf_token }}';
+
+                console.log("Restaurant ID:", restaurantId); // Log the restaurant ID being sent
+
+                try {
+                    const response = await fetch('/restaurants/add_to_favorites/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken,
+                        },
+                        body: JSON.stringify({ restaurant_id: restaurantId }),
+                    });
+
+                    console.log("Response status:", response.status); // Log response status
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const result = await response.json();
+                    console.log("Response data:", result); // Log the result from the server
+                    if (result.status === 'success') {
+                        alert('Added to favorites!');
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (error) {
+                    console.error('Error adding to favorites:', error);
+                    alert('Failed to add to favorites. Please try again.');
+                }
+            }
+        });
+
+        function formatReviews(reviews) {
+            if (!reviews) return '<p>No reviews available.</p>';
+            return reviews.map(review => `
+=======
         function generateInfoWindowContent(details, cuisineType) {
             const ratingStars = details.rating ? `<span class="star">${details.rating.toFixed(1)}</span>` : 'No rating available';
             const reviews = details.reviews ? details.reviews.map(review => `
@@ -295,6 +440,20 @@
                     <p>${review.text}</p>
                 </div>
             `).join('') : 'No reviews available';
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Check if this cookie string begins with the name we want
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
 
             return `
                 <div>
@@ -312,6 +471,7 @@
             // Implement the logic to add to favorites (e.g., AJAX request to your server)
             alert(`Added ${name} to favorites!`);
         }
+
     </script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArjK69M4dg5Mdy8e_LukUKUgL2TOGNucs&libraries=places,geometry&callback=initMap"></script>
 </body>
